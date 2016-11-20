@@ -13,6 +13,7 @@ Aerodis implement some Redis primitives above Aerospike.
 Architecture: Application (which use Redis driver) => Aerodis => Aerospike cluster.
 
 I'm using Aerodis from a big PHP application which use Redis from a long time.
+
 I have deployed one instance of Aerodis on each PHP server, and achieve 50k queries per second on each server,
 and reach 500k queries per second on a five nodes Aerospike cluster.
 
