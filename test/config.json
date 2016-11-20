@@ -1,0 +1,11 @@
+{
+  "aerospike_ips": [
+    "192.168.56.80"
+  ],
+  "sets": [{
+    "proto": "tcp",
+    "listen": "0.0.0.0:6379",
+    "set": "redis",
+    "expanded_map": 1
+  }]
+}

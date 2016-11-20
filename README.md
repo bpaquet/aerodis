@@ -5,10 +5,10 @@ Use Aerospike trough a Redis interface.
 # Why
 
 Redis is a great product, but can be difficult to scale.
-Redis cluster solve some issue, but still use one thread for each server.
-Aerospike is natively distributed and has excellent performance.
+Redis cluster solves some issue, but still use one thread for each server.
+Aerospike is natively distributed, multi-threaded and has excellent performance.
 
-Aerodis implement some Redis primitives above Aerospike.
+Aerodis implement most of Redis primitives above an Aerospike Cluster.
 
 Architecture: Application (which use Redis driver) => Aerodis => Aerospike cluster.
 
@@ -16,6 +16,14 @@ I'm using Aerodis from a big PHP application which use Redis from a long time.
 
 I have deployed one instance of Aerodis on each PHP server, and achieve 50k queries per second on each server,
 and reach 500k queries per second on a five nodes Aerospike cluster.
+
+# Why in Go ?
+
+First try was to implement the (Redis interface in PHP, using the PHP Aerospike drivers)[https://github.com/bpaquet/aerospike_redis_php]. This solution has two problems:
+* the Aerospike PHP driver has slow update cycle, and some problems (this (one)[https://github.com/aerospike/aerospike-client-php/issues/111] for example).
+* PHP is still mono-thread multi-process, so some optimizations can not be done easily (like an in-memory cache for example).
+
+Why use Go to write a new proxy ? Because it's easier than C, and Go Aerospike drivers has good performance.
 
 # What is implemented ?
 
@@ -39,6 +47,7 @@ Some functions which does not exists in Aerospike are implemented:
 * ``setnex``: ``setex``, but only if not exists.
 * `hincrbyex`: ``hincrby`` with a TTL. TTL is the last params.
 * ``hmincrybyex``: mutiple hincrby in the same call. Syntax: ``key ttl [field1 incr1] [field2 incr2]``
+Note: modification of the PHP driver are needed to use these functions from PHP: (v5.x)[https://github.com/bpaquet/phpredis/tree/2.2.7_patched] and (v7)[https://github.com/bpaquet/phpredis/tree/3.0.0_patched].
 
 ## Map functions:
 There is two implementations of map:
@@ -69,7 +78,7 @@ There is some limitations:
 
 ## On Aerospike:
 
-* Install the ``redis.lua`` module: ``register module 'redis.lua'``
+* Install the (``redis.lua``)[redis.lua] module: ``register module 'redis.lua'``
 * For expanded map, create the secondary index: ``create index expanded_map_xxx_yyy on xxx.yyy (m) STRING'``,
 where ``xxx.yyy`` is the namespace / set which will use expanded map.
 
