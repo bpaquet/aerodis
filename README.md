@@ -1,27 +1,27 @@
 # aerodis
 
-Use Aerospike trough a Redis interface.
+Use Aerospike through a Redis interface.
 
 # Why
 
 Redis is a great product, but can be difficult to scale.
-Redis cluster solves some issue, but still use one thread for each server.
+Redis cluster solves some issues, but still uses one thread for each server.
 Aerospike is natively distributed, multi-threaded and has excellent performance.
 
-Aerodis implement most of Redis primitives above an Aerospike Cluster.
+Aerodis implements most of Redis primitives above an Aerospike Cluster.
 
 Architecture: Application (which use Redis driver) => Aerodis => Aerospike cluster.
 
-I'm using Aerodis from a big PHP application which use Redis from a long time.
+I'm using Aerodis from a big PHP application which have used Redis from a long time.
 
-I have deployed one instance of Aerodis on each PHP server, and achieve 50k queries per second on each server,
-and reach 500k queries per second on a five nodes Aerospike cluster.
+I have deployed one instance of Aerodis on each PHP server, and have achieved 50k queries per second on each server,
+and have reached 500k queries per second on five Aerospike nodes.
 
 # Why in Go ?
 
-First try was to implement the (Redis interface in PHP, using the PHP Aerospike drivers)[https://github.com/bpaquet/aerospike_redis_php]. This solution has two problems:
-* the Aerospike PHP driver has slow update cycle, and some problems (this (one)[https://github.com/aerospike/aerospike-client-php/issues/111] for example).
-* PHP is still mono-thread multi-process, so some optimizations can not be done easily (like an in-memory cache for example).
+First attempt was to implement the (Redis interface in PHP, using the PHP Aerospike drivers)[https://github.com/bpaquet/aerospike_redis_php]. This solution has two problems:
+* the Aerospike PHP driver has a slow update cycle, and some problems (this (one)[https://github.com/aerospike/aerospike-client-php/issues/111] for example).
+* PHP is still a mono-thread multi-process, so some optimizations cannot be done easily (like an in-memory cache for example).
 
 Why use Go to write a new proxy ? Because it's easier than C, and Go Aerospike drivers has good performance.
 
@@ -37,28 +37,28 @@ Multi-database: Aerodis does not manage multi database on one socket, but can ma
 * array: ``lpush`` / ``rpush`` / ``rpop`` / ``lpop`` / ``llen`` / ``ltrim`` / ``lRange``
 * flush: ``flushdb`` (using scan, poor performance)
 * map: ``hget`` / ``hset`` / ``hmget`` / ``hmset`` / ``hincrby``/ ``hdel``/ ``hgetall`` (see below)
-* transaction: ``exec``/ ``multi``. Supported for compatibility, but command are executed even between ``exec``/``multi``.
+* transaction: ``exec``/ ``multi``. Supported for compatibility, but commands are executed between ``exec``/``multi``.
 Answers are send when calling ``multi``, like with Redis.
 
 ## Added functions:
 
-Some functions which does not exists in Aerospike are implemented:
+Some functions which do not exist in Aerospike are implemented:
 * ``rpushex``/ ``lpushex``: ``rpush`` / ``lpush`` with a TTL. TTL is the last params.
-* ``setnex``: ``setex``, but only if not exists.
+* ``setnex``: ``setex``, but only if the entry does not exists.
 * `hincrbyex`: ``hincrby`` with a TTL. TTL is the last params.
 * ``hmincrybyex``: mutiple hincrby in the same call. Syntax: ``key ttl [field1 incr1] [field2 incr2]``
-Note: modification of the PHP driver are needed to use these functions from PHP: (v5.x)[https://github.com/bpaquet/phpredis/tree/2.2.7_patched] and (v7)[https://github.com/bpaquet/phpredis/tree/3.0.0_patched].
+Note: modification of the PHP driver is needed to use these functions from PHP: (v5.x)[https://github.com/bpaquet/phpredis/tree/2.2.7_patched] and (v7)[https://github.com/bpaquet/phpredis/tree/3.0.0_patched].
 
 ## Map functions:
 There is two implementations of map:
 
 ### Standard map implementation
 
-Each Redis map is stored into Aerospike in a single entry. A Redis field correspond to an Aerospike bin.
+Each Redis map is stored into Aerospike in a single entry. A Redis field corresponds to an Aerospike bin.
 
 There is some limitations:
 * Aerospike bin name is limited to 14 chars
-* Total number of bin name is limited in Aerospike, so you can not use random field name
+* Total number of bin names is limited in Aerospike, so you cannot use random field names.
 
 The main advantage is performance.
 
@@ -66,12 +66,12 @@ This is the default mode.
 
 ### Expanded map implementation
 
-This implementation allow to use random field name. For each key, Aerospike compute a secondary key and store it in Aerospike.
+This implementation allows use random field names. For each key, Aerodis computes a secondary key and stores it in Aerospike.
 The key / field value is stored in Aerospike under the Aerospike key: ``secondary_key`` + ``field``.
 
 There is some limitations:
-* Each Redis access requires two Aerospike access. A cache can be added, I achieve a hit ratio above 90% on my platform.
-* TTL management is complicated. You have to specify the max TTL for all entries. So you can not use this mode with no expiring entries.
+* Each Redis access requires two Aerospike accesses. A cache can be added, I achieve a hit ratio above 90% on my platform.
+* TTL management is complicated. You have to specify the max TTL for all entries. So you cannot use this mode without TTL.
 * ``hGetAll`` use a (secondary Aerospike index)[http://www.aerospike.com/docs/architecture/secondary-index.html], so performance can be poor.
 
 # How to use it:
@@ -125,11 +125,11 @@ Do not forget to create the secondary index on the set ``redis.expanded_map``in 
 ## Tests
 
 Aerodis has been heavily tested with a PHP application. It should work from any language.
-Please feel free to open issue if you discover problems.
+Please feel free to open an issue if you discover problems.
 
 Tests are only integration tests, and are written in PHP.
 
-## Not documented functions
+## undocumented functions
 
 * Statsd statistics
 * Write back
