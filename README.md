@@ -134,11 +134,16 @@ Please feel free to open an issue if you discover problems.
 
 Tests are only integration tests, and are written in PHP.
 
-## undocumented functions
+## Undocumented functions
 
 * Statsd statistics
 * Write back
 * Backward compatibility
+
+## License
+
+[Apache 2 license](license.txt)
+
 
 
 

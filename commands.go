@@ -2,7 +2,6 @@ package main
 
 import (
   "strconv"
-  "reflect"
   "strings"
   "encoding/base64"
 
@@ -171,10 +170,10 @@ func array_pop(wf write_func, ctx *context, args [][]byte, f string) (error) {
   }
   x := rec.([]interface{})[0]
   // backward compat
-  t := reflect.TypeOf(x).Kind()
-  if t == reflect.Int {
+  switch x.(type) {
+  case int:
     return WriteByteArray(wf, []byte(strconv.Itoa(x.(int))))
-  } else if t == reflect.String {
+  case string:
     s := x.(string)
     if strings.HasPrefix(s, "__64__") {
       bytes, err := base64.StdEncoding.DecodeString(s[6:])
@@ -185,8 +184,9 @@ func array_pop(wf write_func, ctx *context, args [][]byte, f string) (error) {
     }
     return WriteByteArray(wf, []byte(s))
   // end of backward compat
+  default:
+    return WriteByteArray(wf, x.([]byte))
   }
-  return WriteByteArray(wf, x.([]byte))
 }
 
 func cmd_RPOP(wf write_func, ctx *context, args [][]byte) (error) {

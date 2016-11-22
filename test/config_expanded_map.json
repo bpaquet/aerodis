@@ -5,6 +5,7 @@
   "sets": [{
     "proto": "tcp",
     "listen": "0.0.0.0:6379",
-    "set": "redis"
+    "set": "redis",
+    "expanded_map": 1
   }]
 }

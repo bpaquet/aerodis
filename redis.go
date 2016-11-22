@@ -14,7 +14,6 @@ import (
   "errors"
   "math/rand"
   "time"
-  "reflect"
   "runtime/pprof"
 
   as "github.com/aerospike/aerospike-client-go"
@@ -78,15 +77,15 @@ func ExpandedMapHandlers() (map[string]handler) {
 }
 
 func getIntFromJson(x interface{}) (int) {
-  if reflect.TypeOf(x).Kind() == reflect.String {
+  switch x.(type) {
+  case string:
     v, err := strconv.Atoi(x.(string))
     if err != nil {
       panic(err)
     }
     return v
-  } else {
-    return int(x.(float64))
   }
+  return int(x.(float64))
 }
 
 func DisplayExpandedMapCacheStat(ctx *context) {

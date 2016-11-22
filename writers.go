@@ -3,7 +3,6 @@ package main
 import (
   "log"
   "strconv"
-  "reflect"
   "encoding/base64"
   "strings"
   "bytes"
@@ -35,8 +34,8 @@ func WriteArray(wf write_func, array []interface{}) error {
   }
   for _, e := range array {
     // backward compat
-    t := reflect.TypeOf(e).Kind()
-    if t == reflect.String {
+    switch e.(type) {
+    case string:
       s := e.(string)
       if strings.HasPrefix(s, "__64__") {
         bytes, err := base64.StdEncoding.DecodeString(s[6:])
@@ -53,7 +52,7 @@ func WriteArray(wf write_func, array []interface{}) error {
           return err
         }
       }
-    } else {
+    default:
       // end of backward compat
       err := WriteByteArray(wf, e.([]byte))
       if err != nil {
@@ -69,11 +68,11 @@ func WriteLine(wf write_func, s string) error {
 }
 
 func WriteValue(wf write_func, x interface{}) error {
-  t := reflect.TypeOf(x).Kind()
-  if t == reflect.Int {
+  switch x.(type) {
+  case int:
     return WriteByteArray(wf, []byte(strconv.Itoa(x.(int))))
   // backward compat
-  } else if t == reflect.String {
+  case string:
     s := x.(string)
     if strings.HasPrefix(s, "__64__") {
       bytes, err := base64.StdEncoding.DecodeString(s[6:])
@@ -85,8 +84,9 @@ func WriteValue(wf write_func, x interface{}) error {
       return WriteByteArray(wf, []byte(s))
     }
   // end of backward compat
+  default:
+    return WriteByteArray(wf, x.([]byte))
   }
-  return WriteByteArray(wf, x.([]byte))
 }
 
 func WriteBin(wf write_func, rec * as.Record, bin_name string, nil_value string) error {
