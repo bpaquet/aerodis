@@ -187,28 +187,6 @@ function HGETALL(rec)
 	return l
 end
 
-function HINCRBY(rec, field, increment)
-	if (EXISTS(rec, field)) then
-		if (type(rec[field]) == "number") then
-			rec[field] = rec[field] + increment
-		else
-			error('WRONG TYPE')
-		end
-	else
-		rec[field] = increment;
-	end
-	UPDATE(rec)
-	return rec[field]
-end
-
-function HMGET(rec, field_list)
-	local res = list()
-	for field in list.iterator(field_list) do
-		list.append(res, rec[field])
-	end
-	return res
-end
-
 function HMSET(rec, field_value_map)
 	for k,v in map.iterator(field_value_map) do
 		rec[k] = v
