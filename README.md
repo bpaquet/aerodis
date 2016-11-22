@@ -19,11 +19,11 @@ and have reached 500k queries per second on five Aerospike nodes.
 
 # Why in Go ?
 
-First attempt was to implement the (Redis interface in PHP, using the PHP Aerospike drivers)[https://github.com/bpaquet/aerospike_redis_php]. This solution has two problems:
-* the Aerospike PHP driver has a slow update cycle, and some problems (this (one)[https://github.com/aerospike/aerospike-client-php/issues/111] for example).
+First attempt was to implement the [Redis interface in PHP, using the PHP Aerospike drivers](https://github.com/bpaquet/aerospike_redis_php). This solution has two problems:
+* the Aerospike PHP driver has a slow update cycle, and some problems (this [one](https://github.com/aerospike/aerospike-client-php/issues/111) for example).
 * PHP is still a mono-thread multi-process, so some optimizations cannot be done easily (like an in-memory cache for example).
 
-Why use Go to write a new proxy ? Because it's easier than C, and Go Aerospike drivers has good performance.
+Why use Go to write a new proxy ? Because it's easier than C, and Go Aerospike driver has good performance.
 
 # What is implemented ?
 
@@ -37,8 +37,13 @@ Multi-database: Aerodis does not manage multi database on one socket, but can ma
 * array: ``lpush`` / ``rpush`` / ``rpop`` / ``lpop`` / ``llen`` / ``ltrim`` / ``lRange``
 * flush: ``flushdb`` (using scan, poor performance)
 * map: ``hget`` / ``hset`` / ``hmget`` / ``hmset`` / ``hincrby``/ ``hdel``/ ``hgetall`` (see below)
+<<<<<<< HEAD
 * transaction: ``exec``/ ``multi``. Supported for compatibility, but commands are executed between ``exec``/``multi``.
 Answers are send when calling ``multi``, like with Redis.
+=======
+* transaction: ``exec``/ ``multi``. Supported for compatibility, but command are executed even between ``exec``/``multi``.
+Answers are dispatched when calling ``multi``, like with Redis.
+>>>>>>> origin/master
 
 ## Added functions:
 
@@ -47,16 +52,16 @@ Some functions which do not exist in Aerospike are implemented:
 * ``setnex``: ``setex``, but only if the entry does not exists.
 * `hincrbyex`: ``hincrby`` with a TTL. TTL is the last params.
 * ``hmincrybyex``: mutiple hincrby in the same call. Syntax: ``key ttl [field1 incr1] [field2 incr2]``
-Note: modification of the PHP driver is needed to use these functions from PHP: (v5.x)[https://github.com/bpaquet/phpredis/tree/2.2.7_patched] and (v7)[https://github.com/bpaquet/phpredis/tree/3.0.0_patched].
+Note: modification of the PHP driver is needed to use these functions from PHP: [v5.x](https://github.com/bpaquet/phpredis/tree/2.2.7_patched) and [v7](https://github.com/bpaquet/phpredis/tree/3.0.0_patched).
 
 ## Map functions:
-There is two implementations of map:
+There are two implementations of map:
 
 ### Standard map implementation
 
 Each Redis map is stored into Aerospike in a single entry. A Redis field corresponds to an Aerospike bin.
 
-There is some limitations:
+Limitations:
 * Aerospike bin name is limited to 14 chars
 * Total number of bin names is limited in Aerospike, so you cannot use random field names.
 
@@ -72,7 +77,7 @@ The key / field value is stored in Aerospike under the Aerospike key: ``secondar
 There is some limitations:
 * Each Redis access requires two Aerospike accesses. A cache can be added, I achieve a hit ratio above 90% on my platform.
 * TTL management is complicated. You have to specify the max TTL for all entries. So you cannot use this mode without TTL.
-* ``hGetAll`` use a (secondary Aerospike index)[http://www.aerospike.com/docs/architecture/secondary-index.html], so performance can be poor.
+* ``hGetAll`` use a [secondary Aerospike index](http://www.aerospike.com/docs/architecture/secondary-index.html), so performance can be poor.
 
 # How to use it:
 
@@ -114,10 +119,10 @@ Example of config file:
 }
 ````
 
-* ``aerospike_ips``: Add some Aerospike ips to start the Aerospike connection. Usually two.
+* ``aerospike_ips``: Add some Aerospike ips to start the Aerospike connection. Usually two ips are enough.
 * This config file will
-** open a Redis interface on the port ``6379``, using standard map implementation,
-which will be backed on the Aerospike cluster on ``redis.set1``.
+** open a Redis interface on the TCP port ``6379``, using standard map implementation,
+which will be backed on ``redis.set1`` in Aerospike.
 You can specify the namespace to use in the command line.
 ** open a Redis interface in the unix socket ``/tmp/my_socket``, using expanded_map map implementation, with a 2M cache.
 Do not forget to create the secondary index on the set ``redis.expanded_map``in Aerospike.
@@ -133,7 +138,7 @@ Tests are only integration tests, and are written in PHP.
 
 * Statsd statistics
 * Write back
-
+* Backward compatibility
 
 
 
