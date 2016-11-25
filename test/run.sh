@@ -6,6 +6,8 @@ echo "Standard test"
 ../aerodis --config_file config.json &
 sleep 3
 php test.php
+echo "TCP test"
+php tcp.php
 pkill aerodis || true
 sleep 3
 
