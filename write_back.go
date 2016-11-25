@@ -49,7 +49,7 @@ func writeBack(handlers map[string]handler, config map[string]interface{}, ctx *
 	if config["write_back_hIncrBy"] != nil {
 		cacheName := "CACHE_" + strings.ToUpper(ctx.set)
 		m := make(map[string]interface{})
-		m["cacheName"] = cacheName
+		m["cache_name"] = cacheName
 		m["method"] = "hIncrBy"
 		a := make([]interface{}, 3)
 		m["args"] = a
