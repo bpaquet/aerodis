@@ -10,8 +10,8 @@ import (
 	as "github.com/aerospike/aerospike-client-go"
 )
 
-func writeErr(wf writeFunc, error_prefix string, s string) error {
-	log.Printf(error_prefix+"Client error : %s\n", s)
+func writeErr(wf writeFunc, errorPrefix string, s string) error {
+	log.Printf(errorPrefix+"Client error : %s\n", s)
 	return wf([]byte("-ERR " + s + "\n"))
 }
 
@@ -89,32 +89,32 @@ func writeValue(wf writeFunc, x interface{}) error {
 	}
 }
 
-func writeBin(wf writeFunc, rec *as.Record, bin_name string, nil_value string) error {
+func writeBin(wf writeFunc, rec *as.Record, binName string, nilValue string) error {
 	if rec == nil {
-		return writeLine(wf, nil_value)
+		return writeLine(wf, nilValue)
 	}
-	x := rec.Bins[bin_name]
+	x := rec.Bins[binName]
 	if x == nil {
-		return writeLine(wf, nil_value)
+		return writeLine(wf, nilValue)
 	}
 	return writeValue(wf, x)
 }
 
-func writeBinInt(wf writeFunc, rec *as.Record, bin_name string) error {
-	nil_value := ":0"
+func writeBinInt(wf writeFunc, rec *as.Record, binName string) error {
+	nilValue := ":0"
 	if rec == nil {
-		return writeLine(wf, nil_value)
+		return writeLine(wf, nilValue)
 	}
-	x := rec.Bins[bin_name]
+	x := rec.Bins[binName]
 	if x == nil {
-		return writeLine(wf, nil_value)
+		return writeLine(wf, nilValue)
 	}
 	return writeLine(wf, ":"+strconv.Itoa(x.(int)))
 }
 
-func writeArrayBin(wf writeFunc, res []*as.Record, bin_name string, key_bin_name string) error {
+func writeArrayBin(wf writeFunc, res []*as.Record, binName string, keyBinName string) error {
 	l := len(res)
-	if key_bin_name != "" {
+	if keyBinName != "" {
 		l *= 2
 	}
 	err := writeLine(wf, "*"+strconv.Itoa(l))
@@ -122,13 +122,13 @@ func writeArrayBin(wf writeFunc, res []*as.Record, bin_name string, key_bin_name
 		return err
 	}
 	for _, e := range res {
-		if key_bin_name != "" {
-			err := writeBin(wf, e, key_bin_name, "$-1")
+		if keyBinName != "" {
+			err := writeBin(wf, e, keyBinName, "$-1")
 			if err != nil {
 				return err
 			}
 		}
-		err := writeBin(wf, e, bin_name, "$-1")
+		err := writeBin(wf, e, binName, "$-1")
 		if err != nil {
 			return err
 		}

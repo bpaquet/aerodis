@@ -24,33 +24,33 @@ func cmd_DEL(wf writeFunc, ctx *context, args [][]byte) error {
 	return writeLine(wf, ":0")
 }
 
-func get(wf writeFunc, ctx *context, k []byte, bin_name string) error {
+func get(wf writeFunc, ctx *context, k []byte, binName string) error {
 	key, err := buildKey(ctx, k)
 	if err != nil {
 		return err
 	}
-	rec, err := ctx.client.Get(ctx.readPolicy, key, bin_name)
+	rec, err := ctx.client.Get(ctx.readPolicy, key, binName)
 	if err != nil {
 		return err
 	}
-	return writeBin(wf, rec, bin_name, "$-1")
+	return writeBin(wf, rec, binName, "$-1")
 }
 
 func cmd_GET(wf writeFunc, ctx *context, args [][]byte) error {
-	return get(wf, ctx, args[0], BIN_NAME)
+	return get(wf, ctx, args[0], binName)
 }
 
 func cmd_HGET(wf writeFunc, ctx *context, args [][]byte) error {
 	return get(wf, ctx, args[0], string(args[1]))
 }
 
-func setex(wf writeFunc, ctx *context, k []byte, bin_name string, content []byte, ttl int, createOnly bool) error {
+func setex(wf writeFunc, ctx *context, k []byte, binName string, content []byte, ttl int, createOnly bool) error {
 	key, err := buildKey(ctx, k)
 	if err != nil {
 		return err
 	}
 	rec := as.BinMap{
-		bin_name: encode(ctx, content),
+		binName: encode(ctx, content),
 	}
 	err = ctx.client.Put(fillWritePolicyEx(ctx, ttl, createOnly), key, rec)
 	if err != nil {
@@ -66,7 +66,7 @@ func setex(wf writeFunc, ctx *context, k []byte, bin_name string, content []byte
 }
 
 func cmd_SET(wf writeFunc, ctx *context, args [][]byte) error {
-	return setex(wf, ctx, args[0], BIN_NAME, args[1], -1, false)
+	return setex(wf, ctx, args[0], binName, args[1], -1, false)
 }
 
 func cmd_SETEX(wf writeFunc, ctx *context, args [][]byte) error {
@@ -75,11 +75,11 @@ func cmd_SETEX(wf writeFunc, ctx *context, args [][]byte) error {
 		return err
 	}
 
-	return setex(wf, ctx, args[0], BIN_NAME, args[2], ttl, false)
+	return setex(wf, ctx, args[0], binName, args[2], ttl, false)
 }
 
 func cmd_SETNX(wf writeFunc, ctx *context, args [][]byte) error {
-	return setex(wf, ctx, args[0], BIN_NAME, args[1], -1, true)
+	return setex(wf, ctx, args[0], binName, args[1], -1, true)
 }
 
 func cmd_SETNXEX(wf writeFunc, ctx *context, args [][]byte) error {
@@ -88,7 +88,7 @@ func cmd_SETNXEX(wf writeFunc, ctx *context, args [][]byte) error {
 		return err
 	}
 
-	return setex(wf, ctx, args[0], BIN_NAME, args[2], ttl, true)
+	return setex(wf, ctx, args[0], binName, args[2], ttl, true)
 }
 
 func cmd_HSET(wf writeFunc, ctx *context, args [][]byte) error {
@@ -120,7 +120,7 @@ func array_push(wf writeFunc, ctx *context, args [][]byte, f string, ttl int) er
 	if err != nil {
 		return err
 	}
-	rec, err := ctx.client.Execute(ctx.writePolicy, key, MODULE_NAME, f, as.NewValue(BIN_NAME), as.NewValue(encode(ctx, args[1])), as.NewValue(ttl))
+	rec, err := ctx.client.Execute(ctx.writePolicy, key, MODULE_NAME, f, as.NewValue(binName), as.NewValue(encode(ctx, args[1])), as.NewValue(ttl))
 	if err != nil {
 		return err
 	}
@@ -158,7 +158,7 @@ func array_pop(wf writeFunc, ctx *context, args [][]byte, f string) error {
 	if err != nil {
 		return err
 	}
-	rec, err := ctx.client.Execute(ctx.writePolicy, key, MODULE_NAME, f, as.NewValue(BIN_NAME), as.NewValue(1), as.NewValue(-1))
+	rec, err := ctx.client.Execute(ctx.writePolicy, key, MODULE_NAME, f, as.NewValue(binName), as.NewValue(1), as.NewValue(-1))
 	if err != nil {
 		return err
 	}
@@ -203,11 +203,11 @@ func cmd_LLEN(wf writeFunc, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-	rec, err := ctx.client.Get(ctx.readPolicy, key, BIN_NAME+"_size")
+	rec, err := ctx.client.Get(ctx.readPolicy, key, binName+"_size")
 	if err != nil {
 		return err
 	}
-	return writeBinInt(wf, rec, BIN_NAME+"_size")
+	return writeBinInt(wf, rec, binName+"_size")
 }
 
 func cmd_LRANGE(wf writeFunc, ctx *context, args [][]byte) error {
@@ -223,7 +223,7 @@ func cmd_LRANGE(wf writeFunc, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-	rec, err := ctx.client.Execute(ctx.writePolicy, key, MODULE_NAME, "LRANGE", as.NewValue(BIN_NAME), as.NewValue(start), as.NewValue(stop))
+	rec, err := ctx.client.Execute(ctx.writePolicy, key, MODULE_NAME, "LRANGE", as.NewValue(binName), as.NewValue(start), as.NewValue(stop))
 	if err != nil {
 		return err
 	}
@@ -246,7 +246,7 @@ func cmd_LTRIM(wf writeFunc, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-	rec, err := ctx.client.Execute(ctx.writePolicy, key, MODULE_NAME, "LTRIM", as.NewValue(BIN_NAME), as.NewValue(start), as.NewValue(stop))
+	rec, err := ctx.client.Execute(ctx.writePolicy, key, MODULE_NAME, "LTRIM", as.NewValue(binName), as.NewValue(start), as.NewValue(stop))
 	if err != nil {
 		return err
 	}
@@ -273,11 +273,11 @@ func hIncrByEx(wf writeFunc, ctx *context, k []byte, field string, incr int, ttl
 }
 
 func cmd_INCR(wf writeFunc, ctx *context, args [][]byte) error {
-	return hIncrByEx(wf, ctx, args[0], BIN_NAME, 1, -1)
+	return hIncrByEx(wf, ctx, args[0], binName, 1, -1)
 }
 
 func cmd_DECR(wf writeFunc, ctx *context, args [][]byte) error {
-	return hIncrByEx(wf, ctx, args[0], BIN_NAME, -1, -1)
+	return hIncrByEx(wf, ctx, args[0], binName, -1, -1)
 }
 
 func cmd_INCRBY(wf writeFunc, ctx *context, args [][]byte) error {
@@ -285,7 +285,7 @@ func cmd_INCRBY(wf writeFunc, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-	return hIncrByEx(wf, ctx, args[0], BIN_NAME, incr, -1)
+	return hIncrByEx(wf, ctx, args[0], binName, incr, -1)
 }
 
 func cmd_HINCRBY(wf writeFunc, ctx *context, args [][]byte) error {
@@ -313,7 +313,7 @@ func cmd_DECRBY(wf writeFunc, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-	return hIncrByEx(wf, ctx, args[0], BIN_NAME, -decr, -1)
+	return hIncrByEx(wf, ctx, args[0], binName, -decr, -1)
 }
 
 func cmd_HMGET(wf writeFunc, ctx *context, args [][]byte) error {

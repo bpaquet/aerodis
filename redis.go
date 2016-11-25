@@ -21,7 +21,7 @@ import (
 	"github.com/coocood/freecache"
 )
 
-const BIN_NAME = "r"
+const binName = "r"
 const MODULE_NAME = "redis"
 
 func standardHandlers() map[string]handler {
@@ -153,11 +153,11 @@ func main() {
 		panic(err)
 	}
 
-	read_policy := as.NewPolicy()
-	fillReadPolicy(read_policy)
+	readPolicy := as.NewPolicy()
+	fillReadPolicy(readPolicy)
 
-	write_policy := as.NewWritePolicy(0, 0)
-	fillWritePolicy(write_policy)
+	writePolicy := as.NewWritePolicy(0, 0)
+	fillWritePolicy(writePolicy)
 
 	var wg sync.WaitGroup
 
@@ -197,7 +197,7 @@ func main() {
 			backward_write_compat = true
 			log.Printf("%s: Write backward compat", set)
 		}
-		ctx := context{client, *ns, set, read_policy, write_policy, backward_write_compat, 0, 0, 0, 0, nil, 0}
+		ctx := context{client, *ns, set, readPolicy, writePolicy, backward_write_compat, 0, 0, 0, 0, nil, 0}
 
 		if statsd_config != nil {
 			log.Printf("%s: Sending stats to statsd %s", set, statsd_config)
@@ -243,7 +243,7 @@ func handlePort(ctx *context, l net.Listener, handlers map[string]handler) {
 }
 
 func handleConnection(conn net.Conn, handlers map[string]handler, ctx *context) error {
-	error_prefix := "[" + (*ctx).set + "] "
+	errorPrefix := "[" + (*ctx).set + "] "
 	var multi_buffer [][]byte
 	multi_counter := 0
 	multi_mode := false
@@ -326,7 +326,7 @@ func handleConnection(conn net.Conn, handlers map[string]handler, ctx *context) 
 				log.Printf("EOF")
 				return on_error()
 			}
-			writeErr(wf, error_prefix, err.Error())
+			writeErr(wf, errorPrefix, err.Error())
 			atomic.AddUint32(&ctx.counterErr, 1)
 			return on_error()
 		}
@@ -352,7 +352,7 @@ func handleConnection(conn net.Conn, handlers map[string]handler, ctx *context) 
 		}
 		exec_err := handleCommand(args)
 		if exec_err != nil {
-			writeErr(wf, error_prefix, exec_err.Error())
+			writeErr(wf, errorPrefix, exec_err.Error())
 			atomic.AddUint32(&ctx.counterErr, 1)
 			return on_error()
 		} else {

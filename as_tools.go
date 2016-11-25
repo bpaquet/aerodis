@@ -5,13 +5,13 @@ import (
 	ase "github.com/aerospike/aerospike-client-go/types"
 )
 
-func fillReadPolicy(read_policy *as.BasePolicy) {
-	read_policy.ConsistencyLevel = as.CONSISTENCY_ONE
-	read_policy.ReplicaPolicy = as.MASTER_PROLES
+func fillReadPolicy(readPolicy *as.BasePolicy) {
+	readPolicy.ConsistencyLevel = as.CONSISTENCY_ONE
+	readPolicy.ReplicaPolicy = as.MASTER_PROLES
 }
 
-func fillWritePolicy(write_policy *as.WritePolicy) {
-	write_policy.CommitLevel = as.COMMIT_MASTER
+func fillWritePolicy(writePolicy *as.WritePolicy) {
+	writePolicy.CommitLevel = as.COMMIT_MASTER
 }
 
 func fillWritePolicyEx(ctx *context, ttl int, createOnly bool) *as.WritePolicy {
