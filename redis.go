@@ -324,7 +324,7 @@ func handleConnection(conn net.Conn, handlers map[string]handler, ctx *context) 
 			if err == io.EOF {
 				return onError()
 			}
-			writeErr(wf, errorPrefix, err.Error())
+			writeErr(wf, errorPrefix, err.Error(), args)
 			atomic.AddUint32(&ctx.counterErr, 1)
 			return onError()
 		}
@@ -350,7 +350,7 @@ func handleConnection(conn net.Conn, handlers map[string]handler, ctx *context) 
 		}
 		execErr := handleCommand(args)
 		if execErr != nil {
-			writeErr(wf, errorPrefix, execErr.Error())
+			writeErr(wf, errorPrefix, execErr.Error(), args)
 			atomic.AddUint32(&ctx.counterErr, 1)
 			return onError()
 		}
