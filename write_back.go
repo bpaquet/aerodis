@@ -21,9 +21,9 @@ func writeBack(handlers map[string]handler, config map[string]interface{}, ctx *
 		panic(err)
 	}
 	if config["write_back_setTimeout"] != nil {
-		cache_name := "CACHE_" + strings.ToUpper(ctx.set)
+		cacheName := "CACHE_" + strings.ToUpper(ctx.set)
 		m := make(map[string]interface{})
-		m["cache_name"] = cache_name
+		m["cacheName"] = cacheName
 		m["method"] = "setTimeout"
 		a := make([]interface{}, 2)
 		m["args"] = a
@@ -40,16 +40,16 @@ func writeBack(handlers map[string]handler, config map[string]interface{}, ctx *
 			if err != nil {
 				return err
 			}
-			s := cache_name + "_" + key + "|" + string(v)
+			s := cacheName + "_" + key + "|" + string(v)
 			udpSend(conn, s)
 			return writeLine(wf, "+OK")
 		}
 		handlers["EXPIRE"] = handler{handlers["EXPIRE"].argsCount, f}
 	}
 	if config["write_back_hIncrBy"] != nil {
-		cache_name := "CACHE_" + strings.ToUpper(ctx.set)
+		cacheName := "CACHE_" + strings.ToUpper(ctx.set)
 		m := make(map[string]interface{})
-		m["cache_name"] = cache_name
+		m["cacheName"] = cacheName
 		m["method"] = "hIncrBy"
 		a := make([]interface{}, 3)
 		m["args"] = a
@@ -68,7 +68,7 @@ func writeBack(handlers map[string]handler, config map[string]interface{}, ctx *
 			if err != nil {
 				return err
 			}
-			s := cache_name + "_" + key + "|" + string(v)
+			s := cacheName + "_" + key + "|" + string(v)
 			udpSend(conn, s)
 			return writeLine(wf, "+OK")
 		}

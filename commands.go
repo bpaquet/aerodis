@@ -115,7 +115,7 @@ func cmdHDEL(wf writeFunc, ctx *context, args [][]byte) error {
 	return writeLine(wf, ":"+strconv.Itoa(rec.(int)))
 }
 
-func array_push(wf writeFunc, ctx *context, args [][]byte, f string, ttl int) error {
+func arrayPush(wf writeFunc, ctx *context, args [][]byte, f string, ttl int) error {
 	key, err := buildKey(ctx, args[0])
 	if err != nil {
 		return err
@@ -128,7 +128,7 @@ func array_push(wf writeFunc, ctx *context, args [][]byte, f string, ttl int) er
 }
 
 func cmdRPUSH(wf writeFunc, ctx *context, args [][]byte) error {
-	return array_push(wf, ctx, args, "RPUSH", -1)
+	return arrayPush(wf, ctx, args, "RPUSH", -1)
 }
 
 func cmdRPUSHEX(wf writeFunc, ctx *context, args [][]byte) error {
@@ -137,11 +137,11 @@ func cmdRPUSHEX(wf writeFunc, ctx *context, args [][]byte) error {
 		return err
 	}
 
-	return array_push(wf, ctx, args, "RPUSH", ttl)
+	return arrayPush(wf, ctx, args, "RPUSH", ttl)
 }
 
 func cmdLPUSH(wf writeFunc, ctx *context, args [][]byte) error {
-	return array_push(wf, ctx, args, "LPUSH", -1)
+	return arrayPush(wf, ctx, args, "LPUSH", -1)
 }
 
 func cmdLPUSHEX(wf writeFunc, ctx *context, args [][]byte) error {
@@ -150,10 +150,10 @@ func cmdLPUSHEX(wf writeFunc, ctx *context, args [][]byte) error {
 		return err
 	}
 
-	return array_push(wf, ctx, args, "LPUSH", ttl)
+	return arrayPush(wf, ctx, args, "LPUSH", ttl)
 }
 
-func array_pop(wf writeFunc, ctx *context, args [][]byte, f string) error {
+func arrayPop(wf writeFunc, ctx *context, args [][]byte, f string) error {
 	key, err := buildKey(ctx, args[0])
 	if err != nil {
 		return err
@@ -191,11 +191,11 @@ func array_pop(wf writeFunc, ctx *context, args [][]byte, f string) error {
 }
 
 func cmdRPOP(wf writeFunc, ctx *context, args [][]byte) error {
-	return array_pop(wf, ctx, args, "RPOP")
+	return arrayPop(wf, ctx, args, "RPOP")
 }
 
 func cmdLPOP(wf writeFunc, ctx *context, args [][]byte) error {
-	return array_pop(wf, ctx, args, "LPOP")
+	return arrayPop(wf, ctx, args, "LPOP")
 }
 
 func cmdLLEN(wf writeFunc, ctx *context, args [][]byte) error {

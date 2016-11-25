@@ -136,8 +136,8 @@ func main() {
 		hosts = append(hosts, *aeroHost)
 	}
 
-	var client *as.Client = nil
-	var err error = nil
+	var client *as.Client
+	var err error
 
 	for _, i := range hosts {
 		log.Printf("Connecting to aero on %s:%d", i, aPort)
@@ -192,12 +192,12 @@ func main() {
 
 		log.Printf("%s: Listening on %s", set, listen)
 
-		backward_write_compat := false
-		if m["backward_write_compat"] != nil {
-			backward_write_compat = true
+		backwardWriteCompat := false
+		if m["backwardWriteCompat"] != nil {
+			backwardWriteCompat = true
 			log.Printf("%s: Write backward compat", set)
 		}
-		ctx := context{client, *ns, set, readPolicy, writePolicy, backward_write_compat, 0, 0, 0, 0, nil, 0}
+		ctx := context{client, *ns, set, readPolicy, writePolicy, backwardWriteCompat, 0, 0, 0, 0, nil, 0}
 
 		if statsdConfig != nil {
 			log.Printf("%s: Sending stats to statsd %s", set, statsdConfig)
@@ -251,7 +251,7 @@ func handleConnection(conn net.Conn, handlers map[string]handler, ctx *context) 
 		_, err := conn.Write(buffer)
 		return err
 	}
-	sub_wf := func(buffer []byte) error {
+	subWf := func(buffer []byte) error {
 		if multiMode {
 			multiBuffer = append(multiBuffer, buffer)
 			return nil
@@ -293,7 +293,7 @@ func handleConnection(conn net.Conn, handlers map[string]handler, ctx *context) 
 			h, ok := handlers[cmd]
 			if ok {
 				if h.argsCount > len(args) {
-					return errors.New(fmt.Sprintf("Wrong number of params for '%s': %d", cmd, len(args)))
+					return fmt.Errorf("Wrong number of params for '%s': %d", cmd, len(args))
 				} else {
 					if multiMode {
 						multiCounter += 1
@@ -302,13 +302,13 @@ func handleConnection(conn net.Conn, handlers map[string]handler, ctx *context) 
 							return err
 						}
 					}
-					err := h.f(sub_wf, ctx, args)
+					err := h.f(subWf, ctx, args)
 					if err != nil {
-						return errors.New(fmt.Sprintf("Aerospike error: '%s'", err))
+						return fmt.Errorf("Aerospike error: '%s'", err)
 					}
 				}
 			} else {
-				return errors.New(fmt.Sprintf("Unknown command '%s'", cmd))
+				return fmt.Errorf("Unknown command '%s'", cmd)
 			}
 		}
 		return nil
@@ -355,8 +355,7 @@ func handleConnection(conn net.Conn, handlers map[string]handler, ctx *context) 
 			writeErr(wf, errorPrefix, execErr.Error())
 			atomic.AddUint32(&ctx.counterErr, 1)
 			return onError()
-		} else {
-			atomic.AddUint32(&ctx.counterOk, 1)
 		}
+		atomic.AddUint32(&ctx.counterOk, 1)
 	}
 }

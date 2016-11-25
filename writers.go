@@ -80,9 +80,8 @@ func writeValue(wf writeFunc, x interface{}) error {
 				return err
 			}
 			return writeByteArray(wf, bytes)
-		} else {
-			return writeByteArray(wf, []byte(s))
 		}
+		return writeByteArray(wf, []byte(s))
 	// end of backward compat
 	default:
 		return writeByteArray(wf, x.([]byte))
