@@ -23,7 +23,7 @@ func writeBack(handlers map[string]handler, config map[string]interface{}, ctx *
 	if config["write_back_setTimeout"] != nil {
 		cacheName := "CACHE_" + strings.ToUpper(ctx.set)
 		m := make(map[string]interface{})
-		m["cacheName"] = cacheName
+		m["cache_name"] = cacheName
 		m["method"] = "setTimeout"
 		a := make([]interface{}, 2)
 		m["args"] = a
