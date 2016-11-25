@@ -9,7 +9,7 @@ type writeFunc func([]byte) error
 
 type handler struct {
 	argsCount int
-	f          func(writeFunc, *context, [][]byte) error
+	f         func(writeFunc, *context, [][]byte) error
 }
 
 type context struct {

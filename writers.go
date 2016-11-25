@@ -11,14 +11,14 @@ import (
 )
 
 func writeErr(wf writeFunc, errorPrefix string, s string, args [][]byte) error {
-  one := ""
-  two := ""
-  if len(args) > 0 {
-    one = string(args[0])
-  }
-  if len(args) > 1 {
-    two = string(args[1])
-  }
+	one := ""
+	two := ""
+	if len(args) > 0 {
+		one = string(args[0])
+	}
+	if len(args) > 1 {
+		two = string(args[1])
+	}
 	log.Printf("%s Client error : %s {%s, %s}\n", errorPrefix, s, one, two)
 	return wf([]byte("-ERR " + s + "\n"))
 }

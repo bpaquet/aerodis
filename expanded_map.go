@@ -150,7 +150,7 @@ func cmdExpandedMapHSET(wf writeFunc, ctx *context, args [][]byte) error {
 	if exists {
 		return writeLine(wf, ":0")
 	}
-  return writeLine(wf, ":1")
+	return writeLine(wf, ":1")
 }
 
 func cmdExpandedMapHDEL(wf writeFunc, ctx *context, args [][]byte) error {
