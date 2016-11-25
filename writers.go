@@ -10,12 +10,12 @@ import (
 	as "github.com/aerospike/aerospike-client-go"
 )
 
-func WriteErr(wf write_func, error_prefix string, s string) error {
+func writeErr(wf writeFunc, error_prefix string, s string) error {
 	log.Printf(error_prefix+"Client error : %s\n", s)
 	return wf([]byte("-ERR " + s + "\n"))
 }
 
-func WriteByteArray(wf write_func, buf []byte) error {
+func writeByteArray(wf writeFunc, buf []byte) error {
 	err := wf([]byte("$" + strconv.Itoa(len(buf)) + "\r\n"))
 	if err != nil {
 		return err
@@ -27,8 +27,8 @@ func WriteByteArray(wf write_func, buf []byte) error {
 	return wf([]byte("\r\n"))
 }
 
-func WriteArray(wf write_func, array []interface{}) error {
-	err := WriteLine(wf, "*"+strconv.Itoa(len(array)))
+func writeArray(wf writeFunc, array []interface{}) error {
+	err := writeLine(wf, "*"+strconv.Itoa(len(array)))
 	if err != nil {
 		return err
 	}
@@ -42,19 +42,19 @@ func WriteArray(wf write_func, array []interface{}) error {
 				if err != nil {
 					return err
 				}
-				err = WriteByteArray(wf, bytes)
+				err = writeByteArray(wf, bytes)
 				if err != nil {
 					return err
 				}
 			} else {
-				err := WriteByteArray(wf, []byte(s))
+				err := writeByteArray(wf, []byte(s))
 				if err != nil {
 					return err
 				}
 			}
 		default:
 			// end of backward compat
-			err := WriteByteArray(wf, e.([]byte))
+			err := writeByteArray(wf, e.([]byte))
 			if err != nil {
 				return err
 			}
@@ -63,14 +63,14 @@ func WriteArray(wf write_func, array []interface{}) error {
 	return nil
 }
 
-func WriteLine(wf write_func, s string) error {
+func writeLine(wf writeFunc, s string) error {
 	return wf([]byte(s + "\r\n"))
 }
 
-func WriteValue(wf write_func, x interface{}) error {
+func writeValue(wf writeFunc, x interface{}) error {
 	switch x.(type) {
 	case int:
-		return WriteByteArray(wf, []byte(strconv.Itoa(x.(int))))
+		return writeByteArray(wf, []byte(strconv.Itoa(x.(int))))
 	// backward compat
 	case string:
 		s := x.(string)
@@ -79,56 +79,56 @@ func WriteValue(wf write_func, x interface{}) error {
 			if err != nil {
 				return err
 			}
-			return WriteByteArray(wf, bytes)
+			return writeByteArray(wf, bytes)
 		} else {
-			return WriteByteArray(wf, []byte(s))
+			return writeByteArray(wf, []byte(s))
 		}
 	// end of backward compat
 	default:
-		return WriteByteArray(wf, x.([]byte))
+		return writeByteArray(wf, x.([]byte))
 	}
 }
 
-func WriteBin(wf write_func, rec *as.Record, bin_name string, nil_value string) error {
+func writeBin(wf writeFunc, rec *as.Record, bin_name string, nil_value string) error {
 	if rec == nil {
-		return WriteLine(wf, nil_value)
+		return writeLine(wf, nil_value)
 	}
 	x := rec.Bins[bin_name]
 	if x == nil {
-		return WriteLine(wf, nil_value)
+		return writeLine(wf, nil_value)
 	}
-	return WriteValue(wf, x)
+	return writeValue(wf, x)
 }
 
-func WriteBinInt(wf write_func, rec *as.Record, bin_name string) error {
+func writeBinInt(wf writeFunc, rec *as.Record, bin_name string) error {
 	nil_value := ":0"
 	if rec == nil {
-		return WriteLine(wf, nil_value)
+		return writeLine(wf, nil_value)
 	}
 	x := rec.Bins[bin_name]
 	if x == nil {
-		return WriteLine(wf, nil_value)
+		return writeLine(wf, nil_value)
 	}
-	return WriteLine(wf, ":"+strconv.Itoa(x.(int)))
+	return writeLine(wf, ":"+strconv.Itoa(x.(int)))
 }
 
-func WriteArrayBin(wf write_func, res []*as.Record, bin_name string, key_bin_name string) error {
+func writeArrayBin(wf writeFunc, res []*as.Record, bin_name string, key_bin_name string) error {
 	l := len(res)
 	if key_bin_name != "" {
 		l *= 2
 	}
-	err := WriteLine(wf, "*"+strconv.Itoa(l))
+	err := writeLine(wf, "*"+strconv.Itoa(l))
 	if err != nil {
 		return err
 	}
 	for _, e := range res {
 		if key_bin_name != "" {
-			err := WriteBin(wf, e, key_bin_name, "$-1")
+			err := writeBin(wf, e, key_bin_name, "$-1")
 			if err != nil {
 				return err
 			}
 		}
-		err := WriteBin(wf, e, bin_name, "$-1")
+		err := writeBin(wf, e, bin_name, "$-1")
 		if err != nil {
 			return err
 		}
@@ -136,14 +136,14 @@ func WriteArrayBin(wf write_func, res []*as.Record, bin_name string, key_bin_nam
 	return nil
 }
 
-func Encode(ctx *context, buf []byte) interface{} {
+func encode(ctx *context, buf []byte) interface{} {
 	if len(buf) < 10 {
 		x, err := strconv.Atoi(string(buf))
 		if err == nil {
 			return x
 		}
 	}
-	if !ctx.backward_write_compat {
+	if !ctx.backwardWriteCompat {
 		return buf
 	}
 	if bytes.IndexByte(buf, 0) == -1 {

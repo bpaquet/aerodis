@@ -5,24 +5,24 @@ import (
 	"github.com/coocood/freecache"
 )
 
-type write_func func([]byte) error
+type writeFunc func([]byte) error
 
 type handler struct {
 	args_count int
-	f          func(write_func, *context, [][]byte) error
+	f          func(writeFunc, *context, [][]byte) error
 }
 
 type context struct {
-	client                   *as.Client
-	ns                       string
-	set                      string
-	read_policy              *as.BasePolicy
-	write_policy             *as.WritePolicy
-	backward_write_compat    bool
-	counter_ok               uint32
-	counter_err              uint32
-	gauge_conn               int32
-	expanded_map_default_ttl int
-	expanded_map_cache       *freecache.Cache
-	expanded_map_cache_ttl   int
+	client                *as.Client
+	ns                    string
+	set                   string
+	readPolicy            *as.BasePolicy
+	writePolicy           *as.WritePolicy
+	backwardWriteCompat   bool
+	counterOk             uint32
+	counterErr            uint32
+	gaugeConn             int32
+	expandedMapDefaultTTL int
+	expandedMapCache      *freecache.Cache
+	expandedMapCacheTTL   int
 }

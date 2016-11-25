@@ -29,61 +29,61 @@ func Now() int64 {
 	return time.Now().UnixNano()
 }
 
-func format_composite_key(ctx *context, key string, field string) (*as.Key, error) {
+func FormatCompositeKey(ctx *context, key string, field string) (*as.Key, error) {
 	return as.NewKey(ctx.ns, ctx.set, "composite_"+key+"_"+field)
 }
 
-func composite_exists(ctx *context, k string) (*string, error) {
-	if ctx.expanded_map_cache != nil {
-		v, err := ctx.expanded_map_cache.Get([]byte(k))
+func CompositeExists(ctx *context, k string) (*string, error) {
+	if ctx.expandedMapCache != nil {
+		v, err := ctx.expandedMapCache.Get([]byte(k))
 		if err == nil {
 			s := string(v)
 			return &s, nil
 		}
 	}
-	key, err := format_composite_key(ctx, k, MAIN_SUFFIX)
+	key, err := FormatCompositeKey(ctx, k, MAIN_SUFFIX)
 	if err != nil {
 		return nil, err
 	}
-	rec, err := ctx.client.Get(ctx.read_policy, key, ROOT_BIN_NAME)
+	rec, err := ctx.client.Get(ctx.readPolicy, key, ROOT_BIN_NAME)
 	if err != nil {
 		return nil, err
 	}
 	if rec != nil && rec.Bins[ROOT_BIN_NAME] != nil {
 		s := rec.Bins[ROOT_BIN_NAME].(string)
-		if ctx.expanded_map_cache != nil {
-			ctx.expanded_map_cache.Set([]byte(k), []byte(s), ctx.expanded_map_cache_ttl)
+		if ctx.expandedMapCache != nil {
+			ctx.expandedMapCache.Set([]byte(k), []byte(s), ctx.expandedMapCacheTTL)
 		}
 		return &s, nil
 	}
 	return nil, nil
 }
 
-func composite_exists_or_create(ctx *context, k string, ttl int) (*string, bool, error) {
-	return _composite_exists_or_create(ctx, k, ttl, true)
+func CompositeExistsOrCreate(ctx *context, k string, ttl int) (*string, bool, error) {
+	return _CompositeExistsOrCreate(ctx, k, ttl, true)
 }
 
-func _composite_exists_or_create(ctx *context, k string, ttl int, can_retry bool) (*string, bool, error) {
-	suffixed_key, err := composite_exists(ctx, k)
+func _CompositeExistsOrCreate(ctx *context, k string, ttl int, canRetry bool) (*string, bool, error) {
+	suffixedKey, err := CompositeExists(ctx, k)
 	if err != nil {
 		return nil, false, err
 	}
-	if suffixed_key != nil {
+	if suffixedKey != nil {
 		if ttl == -1 {
-			return suffixed_key, false, nil
+			return suffixedKey, false, nil
 		}
-		key, err := format_composite_key(ctx, k, MAIN_SUFFIX)
+		key, err := FormatCompositeKey(ctx, k, MAIN_SUFFIX)
 		if err != nil {
 			return nil, false, err
 		}
-		err = ctx.client.Touch(FillWritePolicyEx(ctx, ttl, false), key)
+		err = ctx.client.Touch(fillWritePolicyEx(ctx, ttl, false), key)
 		if err != nil {
 			return nil, false, err
 		}
-		return suffixed_key, false, nil
+		return suffixedKey, false, nil
 	}
 	kk := k + "_" + RandStringBytes(8)
-	key, err := format_composite_key(ctx, k, MAIN_SUFFIX)
+	key, err := FormatCompositeKey(ctx, k, MAIN_SUFFIX)
 	if err != nil {
 		return nil, false, err
 	}
@@ -91,199 +91,199 @@ func _composite_exists_or_create(ctx *context, k string, ttl int, can_retry bool
 		ROOT_BIN_NAME: kk,
 		"created_at":  Now(),
 	}
-	err = ctx.client.Put(FillWritePolicyEx(ctx, ttl, true), key, rec)
+	err = ctx.client.Put(fillWritePolicyEx(ctx, ttl, true), key, rec)
 	if err != nil {
-		if ResultCode(err) == ase.KEY_EXISTS_ERROR && can_retry {
-			return _composite_exists_or_create(ctx, k, ttl, false)
+		if errResultCode(err) == ase.KEY_EXISTS_ERROR && canRetry {
+			return _CompositeExistsOrCreate(ctx, k, ttl, false)
 		}
 		return nil, false, err
 	}
-	if ctx.expanded_map_cache != nil {
-		ctx.expanded_map_cache.Set([]byte(k), []byte(kk), ctx.expanded_map_cache_ttl)
+	if ctx.expandedMapCache != nil {
+		ctx.expandedMapCache.Set([]byte(k), []byte(kk), ctx.expandedMapCacheTTL)
 	}
 	return &kk, true, nil
 }
 
-func cmd_em_HGET(wf write_func, ctx *context, args [][]byte) error {
-	suffixed_key, err := composite_exists(ctx, string(args[0]))
+func cmd_em_HGET(wf writeFunc, ctx *context, args [][]byte) error {
+	suffixedKey, err := CompositeExists(ctx, string(args[0]))
 	if err != nil {
 		return err
 	}
-	if suffixed_key == nil {
-		return WriteLine(wf, "$-1")
+	if suffixedKey == nil {
+		return writeLine(wf, "$-1")
 	}
 
-	key, err := format_composite_key(ctx, *suffixed_key, string(args[1]))
+	key, err := FormatCompositeKey(ctx, *suffixedKey, string(args[1]))
 	if err != nil {
 		return err
 	}
-	rec, err := ctx.client.Get(ctx.read_policy, key, VALUE_BIN_NAME)
+	rec, err := ctx.client.Get(ctx.readPolicy, key, VALUE_BIN_NAME)
 	if err != nil {
 		return err
 	}
-	return WriteBin(wf, rec, VALUE_BIN_NAME, "$-1")
+	return writeBin(wf, rec, VALUE_BIN_NAME, "$-1")
 }
 
-func cmd_em_HSET(wf write_func, ctx *context, args [][]byte) error {
-	suffixed_key, _, err := composite_exists_or_create(ctx, string(args[0]), -1)
+func cmd_em_HSET(wf writeFunc, ctx *context, args [][]byte) error {
+	suffixedKey, _, err := CompositeExistsOrCreate(ctx, string(args[0]), -1)
 	if err != nil {
 		return err
 	}
-	key, err := format_composite_key(ctx, *suffixed_key, string(args[1]))
+	key, err := FormatCompositeKey(ctx, *suffixedKey, string(args[1]))
 	if err != nil {
 		return err
 	}
-	exists, err := ctx.client.Exists(ctx.read_policy, key)
+	exists, err := ctx.client.Exists(ctx.readPolicy, key)
 	if err != nil {
 		return err
 	}
 	rec := as.BinMap{
-		MAIN_KEY_BIN_NAME:   *suffixed_key,
+		MAIN_KEY_BIN_NAME:   *suffixedKey,
 		SECOND_KEY_BIN_NAME: string(args[1]),
-		VALUE_BIN_NAME:      Encode(ctx, args[2]),
+		VALUE_BIN_NAME:      encode(ctx, args[2]),
 		"created_at":        Now(),
 	}
-	err = ctx.client.Put(ctx.write_policy, key, rec)
+	err = ctx.client.Put(ctx.writePolicy, key, rec)
 	if err != nil {
 		return err
 	}
 	if exists {
-		return WriteLine(wf, ":0")
+		return writeLine(wf, ":0")
 	} else {
-		return WriteLine(wf, ":1")
+		return writeLine(wf, ":1")
 	}
 }
 
-func cmd_em_HDEL(wf write_func, ctx *context, args [][]byte) error {
-	suffixed_key, err := composite_exists(ctx, string(args[0]))
+func cmd_em_HDEL(wf writeFunc, ctx *context, args [][]byte) error {
+	suffixedKey, err := CompositeExists(ctx, string(args[0]))
 	if err != nil {
 		return err
 	}
-	if suffixed_key == nil {
-		return WriteLine(wf, ":0")
+	if suffixedKey == nil {
+		return writeLine(wf, ":0")
 	}
-	key, err := format_composite_key(ctx, *suffixed_key, string(args[1]))
+	key, err := FormatCompositeKey(ctx, *suffixedKey, string(args[1]))
 	if err != nil {
 		return err
 	}
-	existed, err := ctx.client.Delete(ctx.write_policy, key)
+	existed, err := ctx.client.Delete(ctx.writePolicy, key)
 	if err != nil {
 		return err
 	}
 	if existed {
-		return WriteLine(wf, ":1")
+		return writeLine(wf, ":1")
 	}
-	return WriteLine(wf, ":0")
+	return writeLine(wf, ":0")
 }
 
-func cmd_em_EXPIRE(wf write_func, ctx *context, args [][]byte) error {
+func cmd_em_EXPIRE(wf writeFunc, ctx *context, args [][]byte) error {
 	ttl, err := strconv.Atoi(string(args[1]))
 	if err != nil {
 		return err
 	}
-	key, err := format_composite_key(ctx, string(args[0]), MAIN_SUFFIX)
+	key, err := FormatCompositeKey(ctx, string(args[0]), MAIN_SUFFIX)
 	if err != nil {
 		return err
 	}
-	err = ctx.client.Touch(FillWritePolicyEx(ctx, ttl, false), key)
+	err = ctx.client.Touch(fillWritePolicyEx(ctx, ttl, false), key)
 	if err == nil {
-		return WriteLine(wf, ":1")
+		return writeLine(wf, ":1")
 	}
-	if ResultCode(err) != ase.KEY_NOT_FOUND_ERROR {
+	if errResultCode(err) != ase.KEY_NOT_FOUND_ERROR {
 		return err
 	}
 	return cmd_EXPIRE(wf, ctx, args)
 }
 
-func cmd_em_TTL(wf write_func, ctx *context, args [][]byte) error {
-	key, err := format_composite_key(ctx, string(args[0]), MAIN_SUFFIX)
+func cmd_em_TTL(wf writeFunc, ctx *context, args [][]byte) error {
+	key, err := FormatCompositeKey(ctx, string(args[0]), MAIN_SUFFIX)
 	if err != nil {
 		return err
 	}
-	rec, err := ctx.client.GetHeader(ctx.read_policy, key)
+	rec, err := ctx.client.GetHeader(ctx.readPolicy, key)
 	if err != nil {
 		return err
 	}
 	if rec != nil {
-		return WriteLine(wf, ":"+strconv.FormatUint(uint64(rec.Expiration), 10))
+		return writeLine(wf, ":"+strconv.FormatUint(uint64(rec.Expiration), 10))
 	}
 	return cmd_TTL(wf, ctx, args)
 }
 
-func cmd_em_DEL(wf write_func, ctx *context, args [][]byte) error {
-	key, err := format_composite_key(ctx, string(args[0]), MAIN_SUFFIX)
+func cmd_em_DEL(wf writeFunc, ctx *context, args [][]byte) error {
+	key, err := FormatCompositeKey(ctx, string(args[0]), MAIN_SUFFIX)
 	if err != nil {
 		return err
 	}
-	existed, err := ctx.client.Delete(ctx.write_policy, key)
+	existed, err := ctx.client.Delete(ctx.writePolicy, key)
 	if err != nil {
 		return err
 	}
 	if existed {
-		if ctx.expanded_map_cache != nil {
-			ctx.expanded_map_cache.Del(args[0])
+		if ctx.expandedMapCache != nil {
+			ctx.expandedMapCache.Del(args[0])
 		}
-		return WriteLine(wf, ":1")
+		return writeLine(wf, ":1")
 	}
 	return cmd_DEL(wf, ctx, args)
 }
 
-func cmd_em_HMSET(wf write_func, ctx *context, args [][]byte) error {
-	suffixed_key, _, err := composite_exists_or_create(ctx, string(args[0]), -1)
+func cmd_em_HMSET(wf writeFunc, ctx *context, args [][]byte) error {
+	suffixedKey, _, err := CompositeExistsOrCreate(ctx, string(args[0]), -1)
 	if err != nil {
 		return err
 	}
 	for i := 1; i < len(args); i += 2 {
-		key, err := format_composite_key(ctx, *suffixed_key, string(args[i]))
+		key, err := FormatCompositeKey(ctx, *suffixedKey, string(args[i]))
 		if err != nil {
 			return err
 		}
 		rec := as.BinMap{
-			MAIN_KEY_BIN_NAME:   *suffixed_key,
+			MAIN_KEY_BIN_NAME:   *suffixedKey,
 			SECOND_KEY_BIN_NAME: string(args[i]),
-			VALUE_BIN_NAME:      Encode(ctx, args[i+1]),
+			VALUE_BIN_NAME:      encode(ctx, args[i+1]),
 			"created_at":        Now(),
 		}
-		err = ctx.client.Put(FillWritePolicyEx(ctx, ctx.expanded_map_default_ttl, false), key, rec)
+		err = ctx.client.Put(fillWritePolicyEx(ctx, ctx.expandedMapDefaultTTL, false), key, rec)
 		if err != nil {
 			return err
 		}
 	}
-	return WriteLine(wf, "+OK")
+	return writeLine(wf, "+OK")
 }
 
-func cmd_em_HMGET(wf write_func, ctx *context, args [][]byte) error {
-	suffixed_key, err := composite_exists(ctx, string(args[0]))
+func cmd_em_HMGET(wf writeFunc, ctx *context, args [][]byte) error {
+	suffixedKey, err := CompositeExists(ctx, string(args[0]))
 	if err != nil {
 		return err
 	}
 	res := make([]*as.Record, len(args)-1)
-	if suffixed_key != nil {
+	if suffixedKey != nil {
 		for i := 0; i < len(args)-1; i++ {
-			key, err := format_composite_key(ctx, *suffixed_key, string(args[i+1]))
+			key, err := FormatCompositeKey(ctx, *suffixedKey, string(args[i+1]))
 			if err != nil {
 				return err
 			}
-			rec, err := ctx.client.Get(ctx.read_policy, key, VALUE_BIN_NAME)
+			rec, err := ctx.client.Get(ctx.readPolicy, key, VALUE_BIN_NAME)
 			if err != nil {
 				return err
 			}
 			res[i] = rec
 		}
 	}
-	return WriteArrayBin(wf, res, VALUE_BIN_NAME, "")
+	return writeArrayBin(wf, res, VALUE_BIN_NAME, "")
 }
 
-func cmd_em_HGETALL(wf write_func, ctx *context, args [][]byte) error {
-	suffixed_key, err := composite_exists(ctx, string(args[0]))
+func cmd_em_HGETALL(wf writeFunc, ctx *context, args [][]byte) error {
+	suffixedKey, err := CompositeExists(ctx, string(args[0]))
 	if err != nil {
 		return err
 	}
-	if suffixed_key == nil {
-		return WriteArray(wf, make([]interface{}, 0))
+	if suffixedKey == nil {
+		return writeArray(wf, make([]interface{}, 0))
 	}
 	statment := as.NewStatement(ctx.ns, ctx.set)
-	statment.Addfilter(as.NewEqualFilter(MAIN_KEY_BIN_NAME, *suffixed_key))
+	statment.Addfilter(as.NewEqualFilter(MAIN_KEY_BIN_NAME, *suffixedKey))
 	recordset, err := ctx.client.Query(nil, statment)
 	if err != nil {
 		return err
@@ -295,25 +295,25 @@ func cmd_em_HGETALL(wf write_func, ctx *context, args [][]byte) error {
 		}
 		out = append(out, res.Record)
 	}
-	return WriteArrayBin(wf, out, VALUE_BIN_NAME, SECOND_KEY_BIN_NAME)
+	return writeArrayBin(wf, out, VALUE_BIN_NAME, SECOND_KEY_BIN_NAME)
 }
 
-func composite_incr(wf write_func, ctx *context, suffixed_key *string, field string, value int) error {
-	key, err := format_composite_key(ctx, *suffixed_key, field)
+func CompositeIncr(wf writeFunc, ctx *context, suffixedKey *string, field string, value int) error {
+	key, err := FormatCompositeKey(ctx, *suffixedKey, field)
 	if err != nil {
 		return err
 	}
-	rec, err := ctx.client.Operate(FillWritePolicyEx(ctx, ctx.expanded_map_default_ttl, false), key, as.PutOp(as.NewBin(MAIN_KEY_BIN_NAME, *suffixed_key)), as.PutOp(as.NewBin(SECOND_KEY_BIN_NAME, field)), as.AddOp(as.NewBin(VALUE_BIN_NAME, value)), as.GetOpForBin(VALUE_BIN_NAME))
+	rec, err := ctx.client.Operate(fillWritePolicyEx(ctx, ctx.expandedMapDefaultTTL, false), key, as.PutOp(as.NewBin(MAIN_KEY_BIN_NAME, *suffixedKey)), as.PutOp(as.NewBin(SECOND_KEY_BIN_NAME, field)), as.AddOp(as.NewBin(VALUE_BIN_NAME, value)), as.GetOpForBin(VALUE_BIN_NAME))
 	if err != nil {
-		if ResultCode(err) == ase.BIN_TYPE_ERROR {
-			return WriteLine(wf, "$-1")
+		if errResultCode(err) == ase.BIN_TYPE_ERROR {
+			return writeLine(wf, "$-1")
 		}
 		return err
 	}
-	return WriteBinInt(wf, rec, VALUE_BIN_NAME)
+	return writeBinInt(wf, rec, VALUE_BIN_NAME)
 }
 
-func cmd_em_HINCRBYEX(wf write_func, ctx *context, args [][]byte) error {
+func cmd_em_HINCRBYEX(wf writeFunc, ctx *context, args [][]byte) error {
 	incr, err := strconv.Atoi(string(args[2]))
 	if err != nil {
 		return err
@@ -322,31 +322,31 @@ func cmd_em_HINCRBYEX(wf write_func, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-	suffixed_key, _, err := composite_exists_or_create(ctx, string(args[0]), ttl)
+	suffixedKey, _, err := CompositeExistsOrCreate(ctx, string(args[0]), ttl)
 	if err != nil {
 		return err
 	}
-	return composite_incr(wf, ctx, suffixed_key, string(args[1]), incr)
+	return CompositeIncr(wf, ctx, suffixedKey, string(args[1]), incr)
 }
 
-func cmd_em_HINCRBY(wf write_func, ctx *context, args [][]byte) error {
+func cmd_em_HINCRBY(wf writeFunc, ctx *context, args [][]byte) error {
 	incr, err := strconv.Atoi(string(args[2]))
 	if err != nil {
 		return err
 	}
-	suffixed_key, _, err := composite_exists_or_create(ctx, string(args[0]), -1)
+	suffixedKey, _, err := CompositeExistsOrCreate(ctx, string(args[0]), -1)
 	if err != nil {
 		return err
 	}
-	return composite_incr(wf, ctx, suffixed_key, string(args[1]), incr)
+	return CompositeIncr(wf, ctx, suffixedKey, string(args[1]), incr)
 }
 
-func cmd_em_HMINCRBYEX(wf write_func, ctx *context, args [][]byte) error {
+func cmd_em_HMINCRBYEX(wf writeFunc, ctx *context, args [][]byte) error {
 	ttl, err := strconv.Atoi(string(args[1]))
 	if err != nil {
 		return err
 	}
-	suffixed_key, _, err := composite_exists_or_create(ctx, string(args[0]), ttl)
+	suffixedKey, _, err := CompositeExistsOrCreate(ctx, string(args[0]), ttl)
 	if err != nil {
 		return err
 	}
@@ -357,15 +357,15 @@ func cmd_em_HMINCRBYEX(wf write_func, ctx *context, args [][]byte) error {
 			if err != nil {
 				return err
 			}
-			key, err := format_composite_key(ctx, *suffixed_key, string(a[i]))
+			key, err := FormatCompositeKey(ctx, *suffixedKey, string(a[i]))
 			if err != nil {
 				return err
 			}
-			_, err = ctx.client.Operate(FillWritePolicyEx(ctx, ctx.expanded_map_default_ttl, false), key, as.PutOp(as.NewBin(MAIN_KEY_BIN_NAME, *suffixed_key)), as.PutOp(as.NewBin(SECOND_KEY_BIN_NAME, string(a[i]))), as.AddOp(as.NewBin(VALUE_BIN_NAME, incr)))
+			_, err = ctx.client.Operate(fillWritePolicyEx(ctx, ctx.expandedMapDefaultTTL, false), key, as.PutOp(as.NewBin(MAIN_KEY_BIN_NAME, *suffixedKey)), as.PutOp(as.NewBin(SECOND_KEY_BIN_NAME, string(a[i]))), as.AddOp(as.NewBin(VALUE_BIN_NAME, incr)))
 			if err != nil {
 				return err
 			}
 		}
 	}
-	return WriteLine(wf, "+OK")
+	return writeLine(wf, "+OK")
 }

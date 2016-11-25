@@ -36,9 +36,9 @@ func statsd(target string, ctx *context) {
 	start := "redis_go." + hostname + "." + ctx.ns + "." + ctx.set + "."
 	ticker := time.NewTicker(time.Second * time.Duration(10))
 	for range ticker.C {
-		ok := atomic.SwapUint32(&(*ctx).counter_ok, 0)
-		err := atomic.SwapUint32(&(*ctx).counter_err, 0)
-		c := atomic.LoadInt32(&(*ctx).gauge_conn)
+		ok := atomic.SwapUint32(&(*ctx).counterOk, 0)
+		err := atomic.SwapUint32(&(*ctx).counterErr, 0)
+		c := atomic.LoadInt32(&(*ctx).gaugeConn)
 		udpSend(conn, start+"ok:"+strconv.Itoa(int(ok/10))+"|g")
 		udpSend(conn, start+"err:"+strconv.Itoa(int(err/10))+"|g")
 		udpSend(conn, start+"conn:"+strconv.Itoa(int(c))+"|g")

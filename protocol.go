@@ -6,14 +6,14 @@ import (
 	"strconv"
 )
 
-type reading_context struct {
+type readingContext struct {
 	conn  net.Conn
 	buf   []byte
 	start int
 	end   int
 }
 
-func ReadLine(ctx *reading_context, prefix []byte) ([]byte, error) {
+func readLine(ctx *readingContext, prefix []byte) ([]byte, error) {
 	if prefix != nil && prefix[len(prefix)-1] == '\r' && ctx.start == 0 && ctx.buf[0] == '\n' {
 		ctx.start = 1
 		return prefix[0 : len(prefix)-1], nil
@@ -45,7 +45,7 @@ func ReadLine(ctx *reading_context, prefix []byte) ([]byte, error) {
 		current := ctx.buf[ctx.start:]
 		ctx.start = 0
 		ctx.end = 0
-		line, err := ReadLine(ctx, current)
+		line, err := readLine(ctx, current)
 		if err != nil {
 			return nil, err
 		}
@@ -56,10 +56,10 @@ func ReadLine(ctx *reading_context, prefix []byte) ([]byte, error) {
 		return nil, err
 	}
 	ctx.end += l
-	return ReadLine(ctx, prefix)
+	return readLine(ctx, prefix)
 }
 
-func ReadByteArray(ctx *reading_context, size int) ([]byte, error) {
+func readByteArray(ctx *readingContext, size int) ([]byte, error) {
 	if ctx.start+size+2 > ctx.end {
 		size += 2
 		local_buf := make([]byte, size)
@@ -81,22 +81,22 @@ func ReadByteArray(ctx *reading_context, size int) ([]byte, error) {
 	return res, nil
 }
 
-func Parse(ctx *reading_context) ([][]byte, error) {
-	line, err := ReadLine(ctx, nil)
+func parse(ctx *readingContext) ([][]byte, error) {
+	line, err := readLine(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	count := -1
 	args := make([][]byte, 0)
 	if len(line) > 0 && line[0] == '*' {
-		array_count, err := strconv.Atoi(string(line[1:]))
+		arrayCount, err := strconv.Atoi(string(line[1:]))
 		if err != nil {
 			return nil, err
 		}
-		count = array_count
-		args = make([][]byte, array_count)
-		for i := 0; i < array_count; i++ {
-			line, err = ReadLine(ctx, nil)
+		count = arrayCount
+		args = make([][]byte, arrayCount)
+		for i := 0; i < arrayCount; i++ {
+			line, err = readLine(ctx, nil)
 			if err != nil {
 				return nil, err
 			}
@@ -105,7 +105,7 @@ func Parse(ctx *reading_context) ([][]byte, error) {
 				if err != nil {
 					return nil, err
 				}
-				res, err := ReadByteArray(ctx, arg_len)
+				res, err := readByteArray(ctx, arg_len)
 				if err != nil {
 					return nil, err
 				}

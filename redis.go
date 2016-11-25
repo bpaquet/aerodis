@@ -22,9 +22,9 @@ import (
 )
 
 const BIN_NAME = "r"
-const module_name = "redis"
+const MODULE_NAME = "redis"
 
-func StandardHandlers() map[string]handler {
+func standardHandlers() map[string]handler {
 	handlers := make(map[string]handler)
 	handlers["DEL"] = handler{1, cmd_DEL}
 	handlers["GET"] = handler{1, cmd_GET}
@@ -60,8 +60,8 @@ func StandardHandlers() map[string]handler {
 	return handlers
 }
 
-func ExpandedMapHandlers() map[string]handler {
-	handlers := StandardHandlers()
+func expandedMapHandlers() map[string]handler {
+	handlers := standardHandlers()
 	handlers["DEL"] = handler{1, cmd_em_DEL}
 	handlers["HINCRBY"] = handler{3, cmd_em_HINCRBY}
 	handlers["HINCRBYEX"] = handler{4, cmd_em_HINCRBYEX}
@@ -89,12 +89,12 @@ func getIntFromJson(x interface{}) int {
 	return int(x.(float64))
 }
 
-func DisplayExpandedMapCacheStat(ctx *context) {
+func displayExpandedMapCacheStat(ctx *context) {
 	for {
 		time.Sleep(time.Duration(300) * time.Second)
 
-		log.Printf("%s: cache ratio %d %.2f %%", ctx.set, ctx.expanded_map_cache.LookupCount(), ctx.expanded_map_cache.HitRate()*100)
-		ctx.expanded_map_cache.ResetStatistics()
+		log.Printf("%s: cache ratio %d %.2f %%", ctx.set, ctx.expandedMapCache.LookupCount(), ctx.expandedMapCache.HitRate()*100)
+		ctx.expandedMapCache.ResetStatistics()
 	}
 }
 
@@ -154,10 +154,10 @@ func main() {
 	}
 
 	read_policy := as.NewPolicy()
-	FillReadPolicy(read_policy)
+	fillReadPolicy(read_policy)
 
 	write_policy := as.NewWritePolicy(0, 0)
-	FillWritePolicy(write_policy)
+	fillWritePolicy(write_policy)
 
 	var wg sync.WaitGroup
 
@@ -206,43 +206,43 @@ func main() {
 
 		if m["expanded_map"] != nil {
 			if m["default_ttl"] != nil {
-				ctx.expanded_map_default_ttl = getIntFromJson(m["default_ttl"])
+				ctx.expandedMapDefaultTTL = getIntFromJson(m["default_ttl"])
 			} else {
-				ctx.expanded_map_default_ttl = 3600 * 24 * 31
+				ctx.expandedMapDefaultTTL = 3600 * 24 * 31
 			}
-			log.Printf("%s: Expanded map mode, ttl %d", set, ctx.expanded_map_default_ttl)
+			log.Printf("%s: Expanded map mode, ttl %d", set, ctx.expandedMapDefaultTTL)
 			if m["cache_size"] != nil {
 				size := getIntFromJson(m["cache_size"])
-				ctx.expanded_map_cache = freecache.NewCache(size)
-				ctx.expanded_map_cache_ttl = 600
+				ctx.expandedMapCache = freecache.NewCache(size)
+				ctx.expandedMapCacheTTL = 600
 				if m["cache_ttl"] != nil {
-					ctx.expanded_map_cache_ttl = getIntFromJson(m["cache_ttl"])
+					ctx.expandedMapCacheTTL = getIntFromJson(m["cache_ttl"])
 				}
-				log.Printf("%s: Using a cache of %d bytes, ttl %d", set, size, ctx.expanded_map_cache_ttl)
-				go DisplayExpandedMapCacheStat(&ctx)
+				log.Printf("%s: Using a cache of %d bytes, ttl %d", set, size, ctx.expandedMapCacheTTL)
+				go displayExpandedMapCacheStat(&ctx)
 			}
-			go HandlePort(&ctx, l, WriteBack(ExpandedMapHandlers(), m, &ctx))
+			go handlePort(&ctx, l, writeBack(expandedMapHandlers(), m, &ctx))
 		} else {
-			go HandlePort(&ctx, l, WriteBack(StandardHandlers(), m, &ctx))
+			go handlePort(&ctx, l, writeBack(standardHandlers(), m, &ctx))
 		}
 	}
 
 	wg.Wait()
 }
 
-func HandlePort(ctx *context, l net.Listener, handlers map[string]handler) {
+func handlePort(ctx *context, l net.Listener, handlers map[string]handler) {
 	for {
 		conn, err := l.Accept()
 		if err != nil {
 			log.Print("Error accepting: ", err.Error())
 		} else {
-			atomic.AddInt32(&ctx.gauge_conn, 1)
-			go HandleConnection(conn, handlers, ctx)
+			atomic.AddInt32(&ctx.gaugeConn, 1)
+			go handleConnection(conn, handlers, ctx)
 		}
 	}
 }
 
-func HandleConnection(conn net.Conn, handlers map[string]handler, ctx *context) error {
+func handleConnection(conn net.Conn, handlers map[string]handler, ctx *context) error {
 	error_prefix := "[" + (*ctx).set + "] "
 	var multi_buffer [][]byte
 	multi_counter := 0
@@ -263,12 +263,12 @@ func HandleConnection(conn net.Conn, handlers map[string]handler, ctx *context) 
 		if cmd == "MULTI" {
 			multi_counter = 0
 			multi_buffer = multi_buffer[:0]
-			WriteLine(wf, "+OK")
+			writeLine(wf, "+OK")
 			multi_mode = true
 		} else if cmd == "EXEC" {
 			if multi_mode {
 				multi_mode = false
-				err := WriteLine(wf, "*"+strconv.Itoa(multi_counter))
+				err := writeLine(wf, "*"+strconv.Itoa(multi_counter))
 				if err != nil {
 					return err
 				}
@@ -284,7 +284,7 @@ func HandleConnection(conn net.Conn, handlers map[string]handler, ctx *context) 
 		} else if cmd == "DISCARD" {
 			if multi_mode {
 				multi_mode = false
-				WriteLine(wf, "+OK")
+				writeLine(wf, "+OK")
 			} else {
 				return errors.New("Exec received, bit no MULTI before")
 			}
@@ -297,7 +297,7 @@ func HandleConnection(conn net.Conn, handlers map[string]handler, ctx *context) 
 				} else {
 					if multi_mode {
 						multi_counter += 1
-						err := WriteLine(wf, "+QUEUED")
+						err := writeLine(wf, "+QUEUED")
 						if err != nil {
 							return err
 						}
@@ -314,20 +314,20 @@ func HandleConnection(conn net.Conn, handlers map[string]handler, ctx *context) 
 		return nil
 	}
 	on_error := func() error {
-		atomic.AddInt32(&ctx.gauge_conn, -1)
+		atomic.AddInt32(&ctx.gaugeConn, -1)
 		conn.Close()
 		return nil
 	}
-	reading_ctx := reading_context{conn, make([]byte, 1024), 0, 0}
+	reading_ctx := readingContext{conn, make([]byte, 1024), 0, 0}
 	for {
-		args, err := Parse(&reading_ctx)
+		args, err := parse(&reading_ctx)
 		if err != nil {
 			if err == io.EOF {
 				log.Printf("EOF")
 				return on_error()
 			}
-			WriteErr(wf, error_prefix, err.Error())
-			atomic.AddUint32(&ctx.counter_err, 1)
+			writeErr(wf, error_prefix, err.Error())
+			atomic.AddUint32(&ctx.counterErr, 1)
 			return on_error()
 		}
 		cmd := string(args[0])
@@ -343,20 +343,20 @@ func HandleConnection(conn net.Conn, handlers map[string]handler, ctx *context) 
 			d := 60
 			log.Printf("Start CPU Profiling for %d s", d)
 			pprof.StartCPUProfile(f)
-			WriteLine(wf, "+OK In progress")
+			writeLine(wf, "+OK In progress")
 			time.Sleep(time.Duration(60) * time.Second)
 			pprof.StopCPUProfile()
 			log.Printf("End of CPU Profiling, output written to %s", fname)
-			WriteLine(wf, "+OK")
+			writeLine(wf, "+OK")
 			return on_error()
 		}
 		exec_err := handleCommand(args)
 		if exec_err != nil {
-			WriteErr(wf, error_prefix, exec_err.Error())
-			atomic.AddUint32(&ctx.counter_err, 1)
+			writeErr(wf, error_prefix, exec_err.Error())
+			atomic.AddUint32(&ctx.counterErr, 1)
 			return on_error()
 		} else {
-			atomic.AddUint32(&ctx.counter_ok, 1)
+			atomic.AddUint32(&ctx.counterOk, 1)
 		}
 	}
 }
