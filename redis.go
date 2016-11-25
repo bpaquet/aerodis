@@ -322,7 +322,6 @@ func handleConnection(conn net.Conn, handlers map[string]handler, ctx *context) 
 		args, err := parse(&readingCtx)
 		if err != nil {
 			if err == io.EOF {
-				log.Printf("EOF")
 				return onError()
 			}
 			writeErr(wf, errorPrefix, err.Error())
