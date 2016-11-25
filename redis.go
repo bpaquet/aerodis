@@ -26,54 +26,54 @@ const MODULE_NAME = "redis"
 
 func standardHandlers() map[string]handler {
 	handlers := make(map[string]handler)
-	handlers["DEL"] = handler{1, cmd_DEL}
-	handlers["GET"] = handler{1, cmd_GET}
-	handlers["SET"] = handler{2, cmd_SET}
-	handlers["SETEX"] = handler{3, cmd_SETEX}
-	handlers["SETNXEX"] = handler{3, cmd_SETNXEX}
-	handlers["SETNX"] = handler{2, cmd_SETNX}
-	handlers["LLEN"] = handler{1, cmd_LLEN}
-	handlers["RPUSH"] = handler{2, cmd_RPUSH}
-	handlers["LPUSH"] = handler{2, cmd_LPUSH}
-	handlers["RPUSHEX"] = handler{3, cmd_RPUSHEX}
-	handlers["LPUSHEX"] = handler{3, cmd_LPUSHEX}
-	handlers["RPOP"] = handler{1, cmd_RPOP}
-	handlers["LPOP"] = handler{1, cmd_LPOP}
-	handlers["LRANGE"] = handler{3, cmd_LRANGE}
-	handlers["LTRIM"] = handler{3, cmd_LTRIM}
-	handlers["INCR"] = handler{1, cmd_INCR}
-	handlers["INCRBY"] = handler{2, cmd_INCRBY}
-	handlers["HINCRBY"] = handler{3, cmd_HINCRBY}
-	handlers["HINCRBYEX"] = handler{4, cmd_HINCRBYEX}
-	handlers["DECR"] = handler{1, cmd_DECR}
-	handlers["DECRBY"] = handler{2, cmd_DECRBY}
-	handlers["HGET"] = handler{2, cmd_HGET}
-	handlers["HSET"] = handler{3, cmd_HSET}
-	handlers["HDEL"] = handler{2, cmd_HDEL}
-	handlers["HMGET"] = handler{2, cmd_HMGET}
-	handlers["HMSET"] = handler{3, cmd_HMSET}
-	handlers["HMINCRBYEX"] = handler{2, cmd_HMINCRBYEX}
-	handlers["HGETALL"] = handler{1, cmd_HGETALL}
-	handlers["EXPIRE"] = handler{2, cmd_EXPIRE}
-	handlers["TTL"] = handler{1, cmd_TTL}
-	handlers["FLUSHDB"] = handler{0, cmd_FLUSHDB}
+	handlers["DEL"] = handler{1, cmdDEL}
+	handlers["GET"] = handler{1, cmdGET}
+	handlers["SET"] = handler{2, cmdSET}
+	handlers["SETEX"] = handler{3, cmdSETEX}
+	handlers["SETNXEX"] = handler{3, cmdSETNXEX}
+	handlers["SETNX"] = handler{2, cmdSETNX}
+	handlers["LLEN"] = handler{1, cmdLLEN}
+	handlers["RPUSH"] = handler{2, cmdRPUSH}
+	handlers["LPUSH"] = handler{2, cmdLPUSH}
+	handlers["RPUSHEX"] = handler{3, cmdRPUSHEX}
+	handlers["LPUSHEX"] = handler{3, cmdLPUSHEX}
+	handlers["RPOP"] = handler{1, cmdRPOP}
+	handlers["LPOP"] = handler{1, cmdLPOP}
+	handlers["LRANGE"] = handler{3, cmdLRANGE}
+	handlers["LTRIM"] = handler{3, cmdLTRIM}
+	handlers["INCR"] = handler{1, cmdINCR}
+	handlers["INCRBY"] = handler{2, cmdINCRBY}
+	handlers["HINCRBY"] = handler{3, cmdHINCRBY}
+	handlers["HINCRBYEX"] = handler{4, cmdHINCRBYEX}
+	handlers["DECR"] = handler{1, cmdDECR}
+	handlers["DECRBY"] = handler{2, cmdDECRBY}
+	handlers["HGET"] = handler{2, cmdHGET}
+	handlers["HSET"] = handler{3, cmdHSET}
+	handlers["HDEL"] = handler{2, cmdHDEL}
+	handlers["HMGET"] = handler{2, cmdHMGET}
+	handlers["HMSET"] = handler{3, cmdHMSET}
+	handlers["HMINCRBYEX"] = handler{2, cmdHMINCRBYEX}
+	handlers["HGETALL"] = handler{1, cmdHGETALL}
+	handlers["EXPIRE"] = handler{2, cmdEXPIRE}
+	handlers["TTL"] = handler{1, cmdTTL}
+	handlers["FLUSHDB"] = handler{0, cmdFLUSHDB}
 	return handlers
 }
 
 func expandedMapHandlers() map[string]handler {
 	handlers := standardHandlers()
-	handlers["DEL"] = handler{1, cmd_em_DEL}
-	handlers["HINCRBY"] = handler{3, cmd_em_HINCRBY}
-	handlers["HINCRBYEX"] = handler{4, cmd_em_HINCRBYEX}
-	handlers["HGET"] = handler{2, cmd_em_HGET}
-	handlers["HSET"] = handler{3, cmd_em_HSET}
-	handlers["HDEL"] = handler{2, cmd_em_HDEL}
-	handlers["HMGET"] = handler{2, cmd_em_HMGET}
-	handlers["HMSET"] = handler{3, cmd_em_HMSET}
-	handlers["HMINCRBYEX"] = handler{2, cmd_em_HMINCRBYEX}
-	handlers["HGETALL"] = handler{1, cmd_em_HGETALL}
-	handlers["EXPIRE"] = handler{2, cmd_em_EXPIRE}
-	handlers["TTL"] = handler{1, cmd_em_TTL}
+	handlers["DEL"] = handler{1, cmdExpandedMapDEL}
+	handlers["HINCRBY"] = handler{3, cmdExpandedMapHINCRBY}
+	handlers["HINCRBYEX"] = handler{4, cmdExpandedMapHINCRBYEX}
+	handlers["HGET"] = handler{2, cmdExpandedMapHGET}
+	handlers["HSET"] = handler{3, cmdExpandedMapHSET}
+	handlers["HDEL"] = handler{2, cmdExpandedMapHDEL}
+	handlers["HMGET"] = handler{2, cmdExpandedMapHMGET}
+	handlers["HMSET"] = handler{3, cmdExpandedMapHMSET}
+	handlers["HMINCRBYEX"] = handler{2, cmdExpandedMapHMINCRBYEX}
+	handlers["HGETALL"] = handler{1, cmdExpandedMapHGETALL}
+	handlers["EXPIRE"] = handler{2, cmdExpandedMapEXPIRE}
+	handlers["TTL"] = handler{1, cmdExpandedMapTTL}
 	return handlers
 }
 
@@ -101,52 +101,52 @@ func displayExpandedMapCacheStat(ctx *context) {
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	aero_host := flag.String("aero_host", "localhost", "Aerospike server host")
-	aero_port := flag.Int("aero_port", 3000, "Aerospike server port")
+	aeroHost := flag.String("aero_host", "localhost", "Aerospike server host")
+	aeroPort := flag.Int("aero_port", 3000, "Aerospike server port")
 	ns := flag.String("ns", "test", "Aerospike namespace")
-	config_file := flag.String("config_file", "", "Configuration file")
+	configFile := flag.String("config_file", "", "Configuration file")
 	flag.Parse()
 
 	config := []byte("{\"sets\":[{\"proto\":\"tcp\",\"listen\":\"127.0.0.1:6379\",\"set\":\"redis\"}]}")
-	if *config_file != "" {
-		bytes, err := ioutil.ReadFile(*config_file)
+	if *configFile != "" {
+		bytes, err := ioutil.ReadFile(*configFile)
 		if err != nil {
 			panic(err)
 		}
 		config = bytes
 	}
 
-	var parsed_config interface{}
-	e := json.Unmarshal(config, &parsed_config)
+	var parsedConfig interface{}
+	e := json.Unmarshal(config, &parsedConfig)
 	if e != nil {
 		panic(e)
 	}
 
-	m := parsed_config.(map[string]interface{})
-	json_aero_host := m["aerospike_ips"]
+	m := parsedConfig.(map[string]interface{})
+	jsonAeroHost := m["aerospike_ips"]
 
-	a_port := *aero_port
+	aPort := *aeroPort
 	hosts := make([]string, 0)
 
-	if json_aero_host != nil {
-		for _, i := range json_aero_host.([]interface{}) {
+	if jsonAeroHost != nil {
+		for _, i := range jsonAeroHost.([]interface{}) {
 			hosts = append(hosts, i.(string))
 		}
 	} else {
-		hosts = append(hosts, *aero_host)
+		hosts = append(hosts, *aeroHost)
 	}
 
 	var client *as.Client = nil
 	var err error = nil
 
 	for _, i := range hosts {
-		log.Printf("Connecting to aero on %s:%d", i, a_port)
-		client, err = as.NewClient(i, a_port)
+		log.Printf("Connecting to aero on %s:%d", i, aPort)
+		client, err = as.NewClient(i, aPort)
 		if err == nil {
-			log.Printf("Connected to aero on %s:%d, namespace %s", i, a_port, *ns)
+			log.Printf("Connected to aero on %s:%d, namespace %s", i, aPort, *ns)
 			break
 		} else {
-			log.Printf("Unable to connect to %s:%d, %s", i, a_port, err)
+			log.Printf("Unable to connect to %s:%d, %s", i, aPort, err)
 		}
 	}
 	if err != nil {
@@ -163,7 +163,7 @@ func main() {
 
 	sets := m["sets"]
 
-	statsd_config := m["statsd"]
+	statsdConfig := m["statsd"]
 
 	for _, c := range sets.([]interface{}) {
 		wg.Add(1)
@@ -199,9 +199,9 @@ func main() {
 		}
 		ctx := context{client, *ns, set, readPolicy, writePolicy, backward_write_compat, 0, 0, 0, 0, nil, 0}
 
-		if statsd_config != nil {
-			log.Printf("%s: Sending stats to statsd %s", set, statsd_config)
-			go statsd(statsd_config.(string), &ctx)
+		if statsdConfig != nil {
+			log.Printf("%s: Sending stats to statsd %s", set, statsdConfig)
+			go statsd(statsdConfig.(string), &ctx)
 		}
 
 		if m["expanded_map"] != nil {
@@ -244,16 +244,16 @@ func handlePort(ctx *context, l net.Listener, handlers map[string]handler) {
 
 func handleConnection(conn net.Conn, handlers map[string]handler, ctx *context) error {
 	errorPrefix := "[" + (*ctx).set + "] "
-	var multi_buffer [][]byte
-	multi_counter := 0
-	multi_mode := false
+	var multiBuffer [][]byte
+	multiCounter := 0
+	multiMode := false
 	wf := func(buffer []byte) error {
 		_, err := conn.Write(buffer)
 		return err
 	}
 	sub_wf := func(buffer []byte) error {
-		if multi_mode {
-			multi_buffer = append(multi_buffer, buffer)
+		if multiMode {
+			multiBuffer = append(multiBuffer, buffer)
 			return nil
 		}
 		return wf(buffer)
@@ -261,18 +261,18 @@ func handleConnection(conn net.Conn, handlers map[string]handler, ctx *context) 
 	handleCommand := func(args [][]byte) error {
 		cmd := string(args[0])
 		if cmd == "MULTI" {
-			multi_counter = 0
-			multi_buffer = multi_buffer[:0]
+			multiCounter = 0
+			multiBuffer = multiBuffer[:0]
 			writeLine(wf, "+OK")
-			multi_mode = true
+			multiMode = true
 		} else if cmd == "EXEC" {
-			if multi_mode {
-				multi_mode = false
-				err := writeLine(wf, "*"+strconv.Itoa(multi_counter))
+			if multiMode {
+				multiMode = false
+				err := writeLine(wf, "*"+strconv.Itoa(multiCounter))
 				if err != nil {
 					return err
 				}
-				for _, b := range multi_buffer {
+				for _, b := range multiBuffer {
 					err := wf(b)
 					if err != nil {
 						return err
@@ -282,8 +282,8 @@ func handleConnection(conn net.Conn, handlers map[string]handler, ctx *context) 
 				return errors.New("Exec received, bit no MULTI before")
 			}
 		} else if cmd == "DISCARD" {
-			if multi_mode {
-				multi_mode = false
+			if multiMode {
+				multiMode = false
 				writeLine(wf, "+OK")
 			} else {
 				return errors.New("Exec received, bit no MULTI before")
@@ -292,11 +292,11 @@ func handleConnection(conn net.Conn, handlers map[string]handler, ctx *context) 
 			args = args[1:]
 			h, ok := handlers[cmd]
 			if ok {
-				if h.args_count > len(args) {
+				if h.argsCount > len(args) {
 					return errors.New(fmt.Sprintf("Wrong number of params for '%s': %d", cmd, len(args)))
 				} else {
-					if multi_mode {
-						multi_counter += 1
+					if multiMode {
+						multiCounter += 1
 						err := writeLine(wf, "+QUEUED")
 						if err != nil {
 							return err
@@ -313,26 +313,26 @@ func handleConnection(conn net.Conn, handlers map[string]handler, ctx *context) 
 		}
 		return nil
 	}
-	on_error := func() error {
+	onError := func() error {
 		atomic.AddInt32(&ctx.gaugeConn, -1)
 		conn.Close()
 		return nil
 	}
-	reading_ctx := readingContext{conn, make([]byte, 1024), 0, 0}
+	readingCtx := readingContext{conn, make([]byte, 1024), 0, 0}
 	for {
-		args, err := parse(&reading_ctx)
+		args, err := parse(&readingCtx)
 		if err != nil {
 			if err == io.EOF {
 				log.Printf("EOF")
-				return on_error()
+				return onError()
 			}
 			writeErr(wf, errorPrefix, err.Error())
 			atomic.AddUint32(&ctx.counterErr, 1)
-			return on_error()
+			return onError()
 		}
 		cmd := string(args[0])
 		if cmd == "QUIT" {
-			return on_error()
+			return onError()
 		}
 		if cmd == "PROFILE" {
 			fname := "/tmp/redis_go_profile"
@@ -348,13 +348,13 @@ func handleConnection(conn net.Conn, handlers map[string]handler, ctx *context) 
 			pprof.StopCPUProfile()
 			log.Printf("End of CPU Profiling, output written to %s", fname)
 			writeLine(wf, "+OK")
-			return on_error()
+			return onError()
 		}
-		exec_err := handleCommand(args)
-		if exec_err != nil {
-			writeErr(wf, errorPrefix, exec_err.Error())
+		execErr := handleCommand(args)
+		if execErr != nil {
+			writeErr(wf, errorPrefix, execErr.Error())
 			atomic.AddUint32(&ctx.counterErr, 1)
-			return on_error()
+			return onError()
 		} else {
 			atomic.AddUint32(&ctx.counterOk, 1)
 		}

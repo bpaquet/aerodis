@@ -62,11 +62,11 @@ func readLine(ctx *readingContext, prefix []byte) ([]byte, error) {
 func readByteArray(ctx *readingContext, size int) ([]byte, error) {
 	if ctx.start+size+2 > ctx.end {
 		size += 2
-		local_buf := make([]byte, size)
-		copy(local_buf, ctx.buf[ctx.start:ctx.end])
+		localBuf := make([]byte, size)
+		copy(localBuf, ctx.buf[ctx.start:ctx.end])
 		current := ctx.end - ctx.start
 		for current < size {
-			l, err := ctx.conn.Read(local_buf[current:])
+			l, err := ctx.conn.Read(localBuf[current:])
 			if err != nil {
 				return nil, err
 			}
@@ -74,7 +74,7 @@ func readByteArray(ctx *readingContext, size int) ([]byte, error) {
 		}
 		ctx.start = 0
 		ctx.end = 0
-		return local_buf[:size-2], nil
+		return localBuf[:size-2], nil
 	}
 	res := ctx.buf[ctx.start : ctx.start+size]
 	ctx.start += size + 2
@@ -101,11 +101,11 @@ func parse(ctx *readingContext) ([][]byte, error) {
 				return nil, err
 			}
 			if line[0] == '$' {
-				arg_len, err := strconv.Atoi(string(line[1:]))
+				argLen, err := strconv.Atoi(string(line[1:]))
 				if err != nil {
 					return nil, err
 				}
-				res, err := readByteArray(ctx, arg_len)
+				res, err := readByteArray(ctx, argLen)
 				if err != nil {
 					return nil, err
 				}

@@ -44,7 +44,7 @@ func writeBack(handlers map[string]handler, config map[string]interface{}, ctx *
 			udpSend(conn, s)
 			return writeLine(wf, "+OK")
 		}
-		handlers["EXPIRE"] = handler{handlers["EXPIRE"].args_count, f}
+		handlers["EXPIRE"] = handler{handlers["EXPIRE"].argsCount, f}
 	}
 	if config["write_back_hIncrBy"] != nil {
 		cache_name := "CACHE_" + strings.ToUpper(ctx.set)
@@ -72,7 +72,7 @@ func writeBack(handlers map[string]handler, config map[string]interface{}, ctx *
 			udpSend(conn, s)
 			return writeLine(wf, "+OK")
 		}
-		handlers["HINCRBY"] = handler{handlers["HINCRBY"].args_count, f}
+		handlers["HINCRBY"] = handler{handlers["HINCRBY"].argsCount, f}
 	}
 	return handlers
 

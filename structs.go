@@ -8,7 +8,7 @@ import (
 type writeFunc func([]byte) error
 
 type handler struct {
-	args_count int
+	argsCount int
 	f          func(writeFunc, *context, [][]byte) error
 }
 

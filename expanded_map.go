@@ -104,7 +104,7 @@ func _compositeExistsOrCreate(ctx *context, k string, ttl int, canRetry bool) (*
 	return &kk, true, nil
 }
 
-func cmd_em_HGET(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdExpandedMapHGET(wf writeFunc, ctx *context, args [][]byte) error {
 	suffixedKey, err := compositeExists(ctx, string(args[0]))
 	if err != nil {
 		return err
@@ -124,7 +124,7 @@ func cmd_em_HGET(wf writeFunc, ctx *context, args [][]byte) error {
 	return writeBin(wf, rec, VALUE_binName, "$-1")
 }
 
-func cmd_em_HSET(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdExpandedMapHSET(wf writeFunc, ctx *context, args [][]byte) error {
 	suffixedKey, _, err := compositeExistsOrCreate(ctx, string(args[0]), -1)
 	if err != nil {
 		return err
@@ -154,7 +154,7 @@ func cmd_em_HSET(wf writeFunc, ctx *context, args [][]byte) error {
 	}
 }
 
-func cmd_em_HDEL(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdExpandedMapHDEL(wf writeFunc, ctx *context, args [][]byte) error {
 	suffixedKey, err := compositeExists(ctx, string(args[0]))
 	if err != nil {
 		return err
@@ -176,7 +176,7 @@ func cmd_em_HDEL(wf writeFunc, ctx *context, args [][]byte) error {
 	return writeLine(wf, ":0")
 }
 
-func cmd_em_EXPIRE(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdExpandedMapEXPIRE(wf writeFunc, ctx *context, args [][]byte) error {
 	ttl, err := strconv.Atoi(string(args[1]))
 	if err != nil {
 		return err
@@ -192,10 +192,10 @@ func cmd_em_EXPIRE(wf writeFunc, ctx *context, args [][]byte) error {
 	if errResultCode(err) != ase.KEY_NOT_FOUND_ERROR {
 		return err
 	}
-	return cmd_EXPIRE(wf, ctx, args)
+	return cmdEXPIRE(wf, ctx, args)
 }
 
-func cmd_em_TTL(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdExpandedMapTTL(wf writeFunc, ctx *context, args [][]byte) error {
 	key, err := formatCompositeKey(ctx, string(args[0]), MAIN_SUFFIX)
 	if err != nil {
 		return err
@@ -207,10 +207,10 @@ func cmd_em_TTL(wf writeFunc, ctx *context, args [][]byte) error {
 	if rec != nil {
 		return writeLine(wf, ":"+strconv.FormatUint(uint64(rec.Expiration), 10))
 	}
-	return cmd_TTL(wf, ctx, args)
+	return cmdTTL(wf, ctx, args)
 }
 
-func cmd_em_DEL(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdExpandedMapDEL(wf writeFunc, ctx *context, args [][]byte) error {
 	key, err := formatCompositeKey(ctx, string(args[0]), MAIN_SUFFIX)
 	if err != nil {
 		return err
@@ -225,10 +225,10 @@ func cmd_em_DEL(wf writeFunc, ctx *context, args [][]byte) error {
 		}
 		return writeLine(wf, ":1")
 	}
-	return cmd_DEL(wf, ctx, args)
+	return cmdDEL(wf, ctx, args)
 }
 
-func cmd_em_HMSET(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdExpandedMapHMSET(wf writeFunc, ctx *context, args [][]byte) error {
 	suffixedKey, _, err := compositeExistsOrCreate(ctx, string(args[0]), -1)
 	if err != nil {
 		return err
@@ -252,7 +252,7 @@ func cmd_em_HMSET(wf writeFunc, ctx *context, args [][]byte) error {
 	return writeLine(wf, "+OK")
 }
 
-func cmd_em_HMGET(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdExpandedMapHMGET(wf writeFunc, ctx *context, args [][]byte) error {
 	suffixedKey, err := compositeExists(ctx, string(args[0]))
 	if err != nil {
 		return err
@@ -274,7 +274,7 @@ func cmd_em_HMGET(wf writeFunc, ctx *context, args [][]byte) error {
 	return writeArrayBin(wf, res, VALUE_binName, "")
 }
 
-func cmd_em_HGETALL(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdExpandedMapHGETALL(wf writeFunc, ctx *context, args [][]byte) error {
 	suffixedKey, err := compositeExists(ctx, string(args[0]))
 	if err != nil {
 		return err
@@ -298,7 +298,7 @@ func cmd_em_HGETALL(wf writeFunc, ctx *context, args [][]byte) error {
 	return writeArrayBin(wf, out, VALUE_binName, SECOND_keyBinName)
 }
 
-func CompositeIncr(wf writeFunc, ctx *context, suffixedKey *string, field string, value int) error {
+func compositeIncr(wf writeFunc, ctx *context, suffixedKey *string, field string, value int) error {
 	key, err := formatCompositeKey(ctx, *suffixedKey, field)
 	if err != nil {
 		return err
@@ -313,7 +313,7 @@ func CompositeIncr(wf writeFunc, ctx *context, suffixedKey *string, field string
 	return writeBinInt(wf, rec, VALUE_binName)
 }
 
-func cmd_em_HINCRBYEX(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdExpandedMapHINCRBYEX(wf writeFunc, ctx *context, args [][]byte) error {
 	incr, err := strconv.Atoi(string(args[2]))
 	if err != nil {
 		return err
@@ -326,10 +326,10 @@ func cmd_em_HINCRBYEX(wf writeFunc, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-	return CompositeIncr(wf, ctx, suffixedKey, string(args[1]), incr)
+	return compositeIncr(wf, ctx, suffixedKey, string(args[1]), incr)
 }
 
-func cmd_em_HINCRBY(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdExpandedMapHINCRBY(wf writeFunc, ctx *context, args [][]byte) error {
 	incr, err := strconv.Atoi(string(args[2]))
 	if err != nil {
 		return err
@@ -338,10 +338,10 @@ func cmd_em_HINCRBY(wf writeFunc, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-	return CompositeIncr(wf, ctx, suffixedKey, string(args[1]), incr)
+	return compositeIncr(wf, ctx, suffixedKey, string(args[1]), incr)
 }
 
-func cmd_em_HMINCRBYEX(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdExpandedMapHMINCRBYEX(wf writeFunc, ctx *context, args [][]byte) error {
 	ttl, err := strconv.Atoi(string(args[1]))
 	if err != nil {
 		return err
