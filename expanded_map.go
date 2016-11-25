@@ -6,6 +6,7 @@ import (
   "strconv"
 
   as "github.com/aerospike/aerospike-client-go"
+  ase "github.com/aerospike/aerospike-client-go/types"
 )
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -92,7 +93,7 @@ func _composite_exists_or_create(ctx *context, k string, ttl int, can_retry bool
   }
   err = ctx.client.Put(FillWritePolicyEx(ctx, ttl, true), key , rec)
   if err != nil {
-    if err.Error() == "Key already exists" && can_retry {
+    if ResultCode(err) == ase.KEY_EXISTS_ERROR && can_retry {
       return _composite_exists_or_create(ctx, k, ttl, false)
     }
     return nil, false, err
@@ -188,7 +189,7 @@ func cmd_em_EXPIRE(wf write_func, ctx *context, args [][]byte) (error) {
   if err == nil {
     return WriteLine(wf, ":1")
   }
-  if err.Error() != "Key not found" {
+  if ResultCode(err) != ase.KEY_NOT_FOUND_ERROR {
     return err
   }
   return cmd_EXPIRE(wf, ctx, args)
@@ -304,7 +305,7 @@ func composite_incr(wf write_func, ctx *context, suffixed_key *string, field str
   }
   rec, err := ctx.client.Operate(FillWritePolicyEx(ctx, ctx.expanded_map_default_ttl, false), key, as.PutOp(as.NewBin(MAIN_KEY_BIN_NAME, *suffixed_key)), as.PutOp(as.NewBin(SECOND_KEY_BIN_NAME, field)), as.AddOp(as.NewBin(VALUE_BIN_NAME, value)), as.GetOpForBin(VALUE_BIN_NAME))
   if err != nil {
-    if err.Error() == "Bin type error" {
+    if ResultCode(err) == ase.BIN_TYPE_ERROR {
       return WriteLine(wf, "$-1")
     }
     return err

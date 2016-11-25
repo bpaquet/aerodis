@@ -2,6 +2,7 @@ package main
 
 import (
   as "github.com/aerospike/aerospike-client-go"
+  ase "github.com/aerospike/aerospike-client-go/types"
 )
 
 func FillReadPolicy(read_policy * as.BasePolicy) {
@@ -27,4 +28,12 @@ func FillWritePolicyEx(ctx *context, ttl int, create_only bool) * as.WritePolicy
 
 func BuildKey(ctx *context, key []byte) (*as.Key, error) {
   return as.NewKey(ctx.ns, ctx.set, string(key))
+}
+
+func ResultCode(err error) ase.ResultCode {
+  switch err.(type) {
+  case ase.AerospikeError:
+    return err.(ase.AerospikeError).ResultCode()
+  }
+  return -15000
 }

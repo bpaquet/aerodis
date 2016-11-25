@@ -6,6 +6,7 @@ import (
   "encoding/base64"
 
   as "github.com/aerospike/aerospike-client-go"
+  ase "github.com/aerospike/aerospike-client-go/types"
 )
 
 func cmd_DEL(wf write_func, ctx *context, args [][]byte) (error) {
@@ -53,7 +54,7 @@ func setex(wf write_func, ctx *context, k []byte, bin_name string, content []byt
   }
   err = ctx.client.Put(FillWritePolicyEx(ctx, ttl, create_only), key, rec)
   if err != nil  {
-    if create_only && err.Error() == "Key already exists" {
+    if create_only && ResultCode(err) == ase.KEY_EXISTS_ERROR {
       return WriteLine(wf, ":0")
     }
     return err
@@ -263,7 +264,7 @@ func hIncrByEx(wf write_func, ctx *context, k []byte, field string, incr int, tt
   bin := as.NewBin(field, incr)
   rec, err := ctx.client.Operate(FillWritePolicyEx(ctx, ttl, false), key, as.AddOp(bin), as.GetOpForBin(field))
   if err != nil  {
-    if err.Error() == "Bin type error" {
+    if ResultCode(err) == ase.BIN_TYPE_ERROR {
       return WriteLine(wf, "$-1")
     }
     return err
@@ -398,7 +399,7 @@ func cmd_EXPIRE(wf write_func, ctx *context, args [][]byte) (error) {
 
   err = ctx.client.Touch(FillWritePolicyEx(ctx, ttl, false), key)
   if err != nil {
-    if err.Error() == "Key not found" {
+    if ResultCode(err) == ase.KEY_NOT_FOUND_ERROR {
       return WriteLine(wf, ":0")
     }
     return err
@@ -458,7 +459,7 @@ func cmd_HMINCRBYEX(wf write_func, ctx *context, args [][]byte) (error) {
   if len(args) == 2 {
     err := ctx.client.Touch(FillWritePolicyEx(ctx, ttl, false), key)
     if err != nil {
-      if err.Error() != "Key not found" {
+      if ResultCode(err) != ase.KEY_NOT_FOUND_ERROR {
         return err
       }
     }

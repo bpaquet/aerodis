@@ -8,6 +8,7 @@ import (
   "encoding/json"
   "sync"
   "sync/atomic"
+  "io"
   "io/ioutil"
   "log"
   "os"
@@ -307,7 +308,7 @@ func HandleConnection(conn net.Conn, handlers map[string]handler, ctx *context) 
           }
         }
       } else {
-        return errors.New(fmt.Sprintf("unknown command '%s'", cmd))
+        return errors.New(fmt.Sprintf("Unknown command '%s'", cmd))
       }
     }
     return nil
@@ -321,7 +322,8 @@ func HandleConnection(conn net.Conn, handlers map[string]handler, ctx *context) 
   for {
     args, err := Parse(&reading_ctx)
     if err != nil {
-      if err.Error() == "EOF" {
+      if err == io.EOF {
+        log.Printf("EOF")
         return on_error()
       }
       WriteErr(wf, error_prefix, err.Error())
