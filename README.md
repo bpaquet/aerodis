@@ -1,4 +1,6 @@
-# aerodis
+# Aerodis
+
+[![Aerodis](https://goreportcard.com/badge/github.com/bpaquet/aerodis)]
 
 Use Aerospike through a Redis interface.
 

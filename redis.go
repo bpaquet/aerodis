@@ -294,18 +294,17 @@ func handleConnection(conn net.Conn, handlers map[string]handler, ctx *context) 
 			if ok {
 				if h.argsCount > len(args) {
 					return fmt.Errorf("Wrong number of params for '%s': %d", cmd, len(args))
-				} else {
-					if multiMode {
-						multiCounter += 1
-						err := writeLine(wf, "+QUEUED")
-						if err != nil {
-							return err
-						}
-					}
-					err := h.f(subWf, ctx, args)
+				}
+				if multiMode {
+					multiCounter += 1
+					err := writeLine(wf, "+QUEUED")
 					if err != nil {
-						return fmt.Errorf("Aerospike error: '%s'", err)
+						return err
 					}
+				}
+				err := h.f(subWf, ctx, args)
+				if err != nil {
+					return fmt.Errorf("Aerospike error: '%s'", err)
 				}
 			} else {
 				return fmt.Errorf("Unknown command '%s'", cmd)
