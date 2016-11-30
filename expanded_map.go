@@ -232,7 +232,7 @@ func cmdExpandedMapHMSET(wf writeFunc, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-	for i := 1; i < len(args); i += 2 {
+	for i := 1; i+1 < len(args); i += 2 {
 		key, err := formatCompositeKey(ctx, *suffixedKey, string(args[i]))
 		if err != nil {
 			return err
@@ -351,7 +351,7 @@ func cmdExpandedMapHMINCRBYEX(wf writeFunc, ctx *context, args [][]byte) error {
 	}
 	if len(args) > 2 {
 		a := args[2:]
-		for i := 0; i < len(a); i += 2 {
+		for i := 0; i+1 < len(a); i += 2 {
 			incr, err := strconv.Atoi(string(a[i+1]))
 			if err != nil {
 				return err

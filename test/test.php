@@ -288,6 +288,16 @@ compare($r->ltrim('myKey', 2, 4), true);
 compare($r->lsize('myKey'), 0);
 compare($r->lRange('myKey', 0, 0), array());
 
+echo("mget mset\n");
+$r->del('myKey1');
+$r->del('myKey2');
+$r->del('myKey3');
+compare($r->mget([]), false);
+compare($r->mget(['myKey1', 'myKey2']), [false, false]);
+compare($r->mset(array('myKey1' => 'a1', 'myKey3' => 2)), true);
+compare($r->mget(['myKey1', 'myKey2']), ['a1', false]);
+compare($r->mget(['myKey2', 'myKey3']), [false, '2']);
+compare($r->mget(['myKey1', 'myKey2', 'myKey3']), ['a1', false, '2']);
 
 echo("hSet hGet hDel\n");
 $r->del('myKey');

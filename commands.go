@@ -40,6 +40,22 @@ func cmdGET(wf writeFunc, ctx *context, args [][]byte) error {
 	return get(wf, ctx, args[0], binName)
 }
 
+func cmdMGET(wf writeFunc, ctx *context, args [][]byte) error {
+	res := make([]*as.Record, len(args))
+	for i := 0; i < len(args); i++ {
+		key, err := buildKey(ctx, args[i])
+		if err != nil {
+			return err
+		}
+		rec, err := ctx.client.Get(ctx.readPolicy, key, binName)
+		if err != nil {
+			return err
+		}
+		res[i] = rec
+	}
+	return writeArrayBin(wf, res, binName, "")
+}
+
 func cmdHGET(wf writeFunc, ctx *context, args [][]byte) error {
 	return get(wf, ctx, args[0], string(args[1]))
 }
@@ -74,8 +90,24 @@ func cmdSETEX(wf writeFunc, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-
 	return setex(wf, ctx, args[0], binName, args[2], ttl, false)
+}
+
+func cmdMSET(wf writeFunc, ctx *context, args [][]byte) error {
+	for i := 0; i+1 < len(args); i += 2 {
+		key, err := buildKey(ctx, args[i])
+		if err != nil {
+			return err
+		}
+		rec := as.BinMap{
+			binName: encode(ctx, args[i+1]),
+		}
+		err = ctx.client.Put(ctx.writePolicy, key, rec)
+		if err != nil {
+			return err
+		}
+	}
+	return writeLine(wf, "+OK")
 }
 
 func cmdSETNX(wf writeFunc, ctx *context, args [][]byte) error {
@@ -348,7 +380,7 @@ func cmdHMSET(wf writeFunc, ctx *context, args [][]byte) error {
 		return err
 	}
 	m := make(map[string]interface{})
-	for i := 1; i < len(args); i += 2 {
+	for i := 1; i+1 < len(args); i += 2 {
 		m[string(args[i])] = encode(ctx, args[i+1])
 	}
 	rec, err := ctx.client.Execute(ctx.writePolicy, key, MODULE_NAME, "HMSET", as.NewValue(m))
@@ -372,7 +404,7 @@ func cmdHGETALL(wf writeFunc, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-	for i := 0; i < len(a); i += 2 {
+	for i := 0; i+1 < len(a); i += 2 {
 		err = writeByteArray(wf, []byte(a[i].(string)))
 		if err != nil {
 			return err
@@ -466,7 +498,7 @@ func cmdHMINCRBYEX(wf writeFunc, ctx *context, args [][]byte) error {
 	}
 	ops := make([]*as.Operation, 0)
 	a := args[2:]
-	for i := 0; i < len(a); i += 2 {
+	for i := 0; i+1 < len(a); i += 2 {
 		incr, err := strconv.Atoi(string(a[i+1]))
 		if err != nil {
 			return err

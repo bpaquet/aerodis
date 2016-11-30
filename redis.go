@@ -32,6 +32,8 @@ func standardHandlers() map[string]handler {
 	handlers["SETEX"] = handler{3, cmdSETEX}
 	handlers["SETNXEX"] = handler{3, cmdSETNXEX}
 	handlers["SETNX"] = handler{2, cmdSETNX}
+	handlers["MGET"] = handler{2, cmdMGET}
+	handlers["MSET"] = handler{2, cmdMSET}
 	handlers["LLEN"] = handler{1, cmdLLEN}
 	handlers["RPUSH"] = handler{2, cmdRPUSH}
 	handlers["LPUSH"] = handler{2, cmdLPUSH}
