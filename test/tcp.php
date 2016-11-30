@@ -1,5 +1,13 @@
 <?php
 
+function dump($a) {
+  ob_start();
+  var_dump($a);
+  $aa = ob_get_contents();
+  ob_clean();
+  return trim($aa);
+}
+
 function compare($a, $b) {
   if ($a !== $b) {
     throw new Exception("Assert failed : <".dump($a)."> != <".dump($b).">");

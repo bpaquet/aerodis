@@ -134,7 +134,8 @@ Do not forget to create the secondary index on the set ``redis.expanded_map``in 
 Aerodis has been heavily tested with a PHP application. It should work from any language.
 Please feel free to open an issue if you discover problems.
 
-Tests are only integration tests, and are written in PHP.
+Tests are only integration tests, and are written in PHP. Check your aerospike server is
+time synchronized if you hqve TTL issues.
 
 ## Undocumented functions
 
