@@ -18,6 +18,10 @@ local function UPDATE(rec)
 	end
 end
 
+function DELETE(rec)
+	aerospike:remove(rec)
+end
+
 function LPOP(rec, bin, count, ttl)
 	if (EXISTS(rec, bin)) then
 		local l = rec[bin]
