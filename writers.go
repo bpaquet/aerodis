@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/base64"
+	"io"
 	"log"
 	"strconv"
 	"strings"
@@ -10,7 +11,7 @@ import (
 	as "github.com/aerospike/aerospike-client-go"
 )
 
-func writeErr(wf writeFunc, errorPrefix string, s string, args [][]byte) error {
+func writeErr(wf io.Writer, errorPrefix string, s string, args [][]byte) error {
 	one := ""
 	two := ""
 	if len(args) > 0 {
@@ -20,22 +21,22 @@ func writeErr(wf writeFunc, errorPrefix string, s string, args [][]byte) error {
 		two = string(args[1])
 	}
 	log.Printf("%s Client error : %s {%s, %s}\n", errorPrefix, s, one, two)
-	return wf([]byte("-ERR " + s + "\n"))
+	return write(wf, []byte("-ERR "+s+"\n"))
 }
 
-func writeByteArray(wf writeFunc, buf []byte) error {
-	err := wf([]byte("$" + strconv.Itoa(len(buf)) + "\r\n"))
+func writeByteArray(wf io.Writer, buf []byte) error {
+	err := write(wf, []byte("$"+strconv.Itoa(len(buf))+"\r\n"))
 	if err != nil {
 		return err
 	}
-	err = wf(buf)
+	err = write(wf, buf)
 	if err != nil {
 		return err
 	}
-	return wf([]byte("\r\n"))
+	return write(wf, []byte("\r\n"))
 }
 
-func writeArray(wf writeFunc, array []interface{}) error {
+func writeArray(wf io.Writer, array []interface{}) error {
 	err := writeLine(wf, "*"+strconv.Itoa(len(array)))
 	if err != nil {
 		return err
@@ -71,11 +72,28 @@ func writeArray(wf writeFunc, array []interface{}) error {
 	return nil
 }
 
-func writeLine(wf writeFunc, s string) error {
-	return wf([]byte(s + "\r\n"))
+func write(wf io.Writer, b []byte) error {
+	if _, err := wf.Write(b); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func writeValue(wf writeFunc, x interface{}) error {
+func writeLine(wf io.Writer, s string) error {
+	if err := write(wf, []byte(s)); err != nil {
+		return err
+	}
+
+	if err := write(wf, []byte("\r\n")); err != nil {
+		return err
+	}
+
+	return nil
+	// return wf([]byte(s + "\r\n"))
+}
+
+func writeValue(wf io.Writer, x interface{}) error {
 	switch x.(type) {
 	case int:
 		return writeByteArray(wf, []byte(strconv.Itoa(x.(int))))
@@ -96,7 +114,7 @@ func writeValue(wf writeFunc, x interface{}) error {
 	}
 }
 
-func writeBin(wf writeFunc, rec *as.Record, binName string, nilValue string) error {
+func writeBin(wf io.Writer, rec *as.Record, binName string, nilValue string) error {
 	if rec == nil {
 		return writeLine(wf, nilValue)
 	}
@@ -107,7 +125,7 @@ func writeBin(wf writeFunc, rec *as.Record, binName string, nilValue string) err
 	return writeValue(wf, x)
 }
 
-func writeBinInt(wf writeFunc, rec *as.Record, binName string) error {
+func writeBinInt(wf io.Writer, rec *as.Record, binName string) error {
 	nilValue := ":0"
 	if rec == nil {
 		return writeLine(wf, nilValue)
@@ -119,7 +137,7 @@ func writeBinInt(wf writeFunc, rec *as.Record, binName string) error {
 	return writeLine(wf, ":"+strconv.Itoa(x.(int)))
 }
 
-func writeArrayBin(wf writeFunc, res []*as.Record, binName string, keyBinName string) error {
+func writeArrayBin(wf io.Writer, res []*as.Record, binName string, keyBinName string) error {
 	l := len(res)
 	if keyBinName != "" {
 		l *= 2

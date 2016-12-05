@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -249,96 +250,30 @@ func handlePort(ctx *context, l net.Listener, handlers map[string]handler) {
 }
 
 func handleConnection(conn net.Conn, handlers map[string]handler, ctx *context) error {
-	errorPrefix := "[" + (*ctx).set + "] "
-	var multiBuffer [][]byte
-	multiCounter := 0
+	multiBuffer := bytes.NewBuffer(nil)
 	multiMode := false
-	wf := func(buffer []byte) error {
-		_, err := conn.Write(buffer)
-		return err
-	}
-	subWf := func(buffer []byte) error {
-		if multiMode {
-			multiBuffer = append(multiBuffer, buffer)
-			return nil
-		}
-		return wf(buffer)
-	}
-	handleCommand := func(args [][]byte) error {
-		cmd := string(args[0])
-		if cmd == "MULTI" {
-			multiCounter = 0
-			multiBuffer = multiBuffer[:0]
-			writeLine(wf, "+OK")
-			multiMode = true
-		} else if cmd == "EXEC" {
-			if multiMode {
-				multiMode = false
-				err := writeLine(wf, "*"+strconv.Itoa(multiCounter))
-				if err != nil {
-					return err
-				}
-				for _, b := range multiBuffer {
-					err := wf(b)
-					if err != nil {
-						return err
-					}
-				}
-			} else {
-				return errors.New("Exec received, bit no MULTI before")
-			}
-		} else if cmd == "DISCARD" {
-			if multiMode {
-				multiMode = false
-				writeLine(wf, "+OK")
-			} else {
-				return errors.New("Exec received, bit no MULTI before")
-			}
-		} else {
-			args = args[1:]
-			h, ok := handlers[cmd]
-			if ok {
-				if h.argsCount > len(args) {
-					return fmt.Errorf("Wrong number of params for '%s': %d", cmd, len(args))
-				}
-				if multiMode {
-					multiCounter += 1
-					err := writeLine(wf, "+QUEUED")
-					if err != nil {
-						return err
-					}
-				}
-				err := h.f(subWf, ctx, args)
-				if err != nil {
-					return fmt.Errorf("Aerospike error: '%s'", err)
-				}
-			} else {
-				return fmt.Errorf("Unknown command '%s'", cmd)
-			}
-		}
-		return nil
-	}
-	onError := func() error {
-		atomic.AddInt32(&ctx.gaugeConn, -1)
-		conn.Close()
-		return nil
-	}
+	multiCounter := 0
+
+	errorPrefix := "[" + (*ctx).set + "] "
+
 	readingCtx := bufio.NewReader(conn)
 	for {
 		args, err := parse(readingCtx)
 		if err != nil {
 			if err == io.EOF {
-				return onError()
+				return handleError(nil, ctx, conn)
 			}
-			writeErr(wf, errorPrefix, err.Error(), args)
+			writeErr(conn, errorPrefix, err.Error(), args)
 			atomic.AddUint32(&ctx.counterErr, 1)
-			return onError()
+			return handleError(err, ctx, conn)
 		}
+
 		cmd := string(args[0])
-		if cmd == "QUIT" {
-			return onError()
-		}
-		if cmd == "PROFILE" {
+		switch cmd {
+		case "QUIT":
+			return handleError(nil, ctx, conn)
+
+		case "PROFILE":
 			fname := "/tmp/redis_go_profile"
 			f, err := os.Create(fname)
 			if err != nil {
@@ -347,19 +282,88 @@ func handleConnection(conn net.Conn, handlers map[string]handler, ctx *context) 
 			d := 60
 			log.Printf("Start CPU Profiling for %d s", d)
 			pprof.StartCPUProfile(f)
-			writeLine(wf, "+OK In progress")
+			writeLine(conn, "+OK In progress")
 			time.Sleep(time.Duration(60) * time.Second)
 			pprof.StopCPUProfile()
 			log.Printf("End of CPU Profiling, output written to %s", fname)
-			writeLine(wf, "+OK")
-			return onError()
+			writeLine(conn, "+OK")
+			return handleError(err, ctx, conn)
 		}
-		execErr := handleCommand(args)
+
+		execErr := handleCommand(conn, args, handlers, ctx, &multiMode, &multiCounter, multiBuffer)
 		if execErr != nil {
-			writeErr(wf, errorPrefix, execErr.Error(), args)
+			writeErr(conn, errorPrefix, execErr.Error(), args)
 			atomic.AddUint32(&ctx.counterErr, 1)
-			return onError()
+			return handleError(execErr, ctx, conn)
 		}
 		atomic.AddUint32(&ctx.counterOk, 1)
 	}
+}
+
+func handleCommand(wf io.Writer, args [][]byte, handlers map[string]handler, ctx *context, multiMode *bool, multiCounter *int, multiBuffer *bytes.Buffer) error {
+	cmd := string(args[0])
+	switch cmd {
+	case "MULTI":
+		*multiCounter = 0
+		multiBuffer.Reset()
+		if err := writeLine(wf, "+OK"); err != nil {
+			return err
+		}
+		*multiMode = true
+
+	case "EXEC":
+		if !*multiMode {
+			return errors.New("Exec received, but no MULTI before")
+		}
+
+		*multiMode = false
+		err := writeLine(wf, "*"+strconv.Itoa(*multiCounter))
+		if err != nil {
+			return err
+		}
+
+		if err = write(wf, multiBuffer.Bytes()); err != nil {
+			return err
+		}
+
+	case "DISCARD":
+		if !*multiMode {
+			return errors.New("Exec received, but no MULTI before")
+		}
+
+		*multiMode = false
+		if err := writeLine(wf, "+OK"); err != nil {
+			return err
+		}
+
+	default:
+		args = args[1:]
+		if h, ok := handlers[cmd]; ok {
+			if h.argsCount > len(args) {
+				return fmt.Errorf("Wrong number of params for '%s': %d", cmd, len(args))
+			}
+			targetWriter := wf
+			if *multiMode {
+				*multiCounter += 1
+				err := writeLine(wf, "+QUEUED")
+				if err != nil {
+					return err
+				}
+				targetWriter = multiBuffer
+			}
+			if err := h.f(targetWriter, ctx, args); err != nil {
+				return fmt.Errorf("Aerospike error: '%s'", err)
+			}
+		} else {
+			return fmt.Errorf("Unknown command '%s'", cmd)
+		}
+	}
+
+	return nil
+}
+
+func handleError(err error, ctx *context, conn net.Conn) error {
+	atomic.AddInt32(&ctx.gaugeConn, -1)
+	conn.Close()
+	return nil
 }
