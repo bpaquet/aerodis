@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -101,6 +102,9 @@ func displayExpandedMapCacheStat(ctx *context) {
 }
 
 func main() {
+	// to change the flags on the default logger
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
 	rand.Seed(time.Now().UnixNano())
 
 	aeroHost := flag.String("aero_host", "localhost", "Aerospike server host")
@@ -319,9 +323,9 @@ func handleConnection(conn net.Conn, handlers map[string]handler, ctx *context) 
 		conn.Close()
 		return nil
 	}
-	readingCtx := readingContext{conn, make([]byte, 1024), 0, 0}
+	readingCtx := bufio.NewReader(conn)
 	for {
-		args, err := parse(&readingCtx)
+		args, err := parse(readingCtx)
 		if err != nil {
 			if err == io.EOF {
 				return onError()
