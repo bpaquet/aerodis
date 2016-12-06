@@ -139,7 +139,7 @@ compare($r->rpush('myKey', $bin), 1);
 compare(gzuncompress($r->lrange('myKey', 0, 200)[0]), $json);
 compare(gzuncompress($r->rpop('myKey')), $json);
 
-echo("Incr / Decr\n");
+echo("Incr Decr\n");
 
 $r->delete('myKey');
 compare($r->get('myKey'), false);
@@ -288,7 +288,7 @@ compare($r->ltrim('myKey', 2, 4), true);
 compare($r->lsize('myKey'), 0);
 compare($r->lRange('myKey', 0, 0), array());
 
-echo("mget mset\n");
+echo("mGet mSet\n");
 $r->del('myKey1');
 $r->del('myKey2');
 $r->del('myKey3');
@@ -418,7 +418,7 @@ if (!isset($_ENV['USE_REAL_REDIS'])) {
   compare_map($r->hGetAll('myKey'), array());
 }
 
-echo("Exec/Multi\n");
+echo("Exec Multi\n");
 
 $r->del('myKey');
 $r->del('myKey2');
