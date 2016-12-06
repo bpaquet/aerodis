@@ -1,15 +1,15 @@
 package main
 
 import (
+	"io"
+
 	as "github.com/aerospike/aerospike-client-go"
 	"github.com/coocood/freecache"
 )
 
-type writeFunc func([]byte) error
-
 type handler struct {
 	argsCount int
-	f         func(writeFunc, *context, [][]byte) error
+	f         func(io.Writer, *context, [][]byte) error
 }
 
 type context struct {

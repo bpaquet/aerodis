@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/base64"
+	"io"
+	"log"
 	"strconv"
 	"strings"
 
@@ -9,7 +11,7 @@ import (
 	ase "github.com/aerospike/aerospike-client-go/types"
 )
 
-func cmdDEL(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdDEL(wf io.Writer, ctx *context, args [][]byte) error {
 	key, err := buildKey(ctx, args[0])
 	if err != nil {
 		return err
@@ -24,7 +26,7 @@ func cmdDEL(wf writeFunc, ctx *context, args [][]byte) error {
 	return writeLine(wf, ":0")
 }
 
-func get(wf writeFunc, ctx *context, k []byte, binName string) error {
+func get(wf io.Writer, ctx *context, k []byte, binName string) error {
 	key, err := buildKey(ctx, k)
 	if err != nil {
 		return err
@@ -36,11 +38,11 @@ func get(wf writeFunc, ctx *context, k []byte, binName string) error {
 	return writeBin(wf, rec, binName, "$-1")
 }
 
-func cmdGET(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdGET(wf io.Writer, ctx *context, args [][]byte) error {
 	return get(wf, ctx, args[0], binName)
 }
 
-func cmdMGET(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdMGET(wf io.Writer, ctx *context, args [][]byte) error {
 	res := make([]*as.Record, len(args))
 	for i := 0; i < len(args); i++ {
 		key, err := buildKey(ctx, args[i])
@@ -56,11 +58,11 @@ func cmdMGET(wf writeFunc, ctx *context, args [][]byte) error {
 	return writeArrayBin(wf, res, binName, "")
 }
 
-func cmdHGET(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdHGET(wf io.Writer, ctx *context, args [][]byte) error {
 	return get(wf, ctx, args[0], string(args[1]))
 }
 
-func setex(wf writeFunc, ctx *context, k []byte, binName string, content []byte, ttl int, createOnly bool) error {
+func setex(wf io.Writer, ctx *context, k []byte, binName string, content []byte, ttl int, createOnly bool) error {
 	key, err := buildKey(ctx, k)
 	if err != nil {
 		return err
@@ -81,11 +83,11 @@ func setex(wf writeFunc, ctx *context, k []byte, binName string, content []byte,
 	return writeLine(wf, "+OK")
 }
 
-func cmdSET(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdSET(wf io.Writer, ctx *context, args [][]byte) error {
 	return setex(wf, ctx, args[0], binName, args[1], -1, false)
 }
 
-func cmdSETEX(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdSETEX(wf io.Writer, ctx *context, args [][]byte) error {
 	ttl, err := strconv.Atoi(string(args[1]))
 	if err != nil {
 		return err
@@ -93,7 +95,7 @@ func cmdSETEX(wf writeFunc, ctx *context, args [][]byte) error {
 	return setex(wf, ctx, args[0], binName, args[2], ttl, false)
 }
 
-func cmdMSET(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdMSET(wf io.Writer, ctx *context, args [][]byte) error {
 	for i := 0; i+1 < len(args); i += 2 {
 		key, err := buildKey(ctx, args[i])
 		if err != nil {
@@ -110,11 +112,11 @@ func cmdMSET(wf writeFunc, ctx *context, args [][]byte) error {
 	return writeLine(wf, "+OK")
 }
 
-func cmdSETNX(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdSETNX(wf io.Writer, ctx *context, args [][]byte) error {
 	return setex(wf, ctx, args[0], binName, args[1], -1, true)
 }
 
-func cmdSETNXEX(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdSETNXEX(wf io.Writer, ctx *context, args [][]byte) error {
 	ttl, err := strconv.Atoi(string(args[1]))
 	if err != nil {
 		return err
@@ -123,7 +125,7 @@ func cmdSETNXEX(wf writeFunc, ctx *context, args [][]byte) error {
 	return setex(wf, ctx, args[0], binName, args[2], ttl, true)
 }
 
-func cmdHSET(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdHSET(wf io.Writer, ctx *context, args [][]byte) error {
 	key, err := buildKey(ctx, args[0])
 	if err != nil {
 		return err
@@ -135,7 +137,7 @@ func cmdHSET(wf writeFunc, ctx *context, args [][]byte) error {
 	return writeLine(wf, ":"+strconv.Itoa(rec.(int)))
 }
 
-func cmdHDEL(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdHDEL(wf io.Writer, ctx *context, args [][]byte) error {
 	key, err := buildKey(ctx, args[0])
 	if err != nil {
 		return err
@@ -147,7 +149,7 @@ func cmdHDEL(wf writeFunc, ctx *context, args [][]byte) error {
 	return writeLine(wf, ":"+strconv.Itoa(rec.(int)))
 }
 
-func arrayPush(wf writeFunc, ctx *context, args [][]byte, f string, ttl int) error {
+func arrayPush(wf io.Writer, ctx *context, args [][]byte, f string, ttl int) error {
 	key, err := buildKey(ctx, args[0])
 	if err != nil {
 		return err
@@ -159,11 +161,11 @@ func arrayPush(wf writeFunc, ctx *context, args [][]byte, f string, ttl int) err
 	return writeLine(wf, ":"+strconv.Itoa(rec.(int)))
 }
 
-func cmdRPUSH(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdRPUSH(wf io.Writer, ctx *context, args [][]byte) error {
 	return arrayPush(wf, ctx, args, "RPUSH", -1)
 }
 
-func cmdRPUSHEX(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdRPUSHEX(wf io.Writer, ctx *context, args [][]byte) error {
 	ttl, err := strconv.Atoi(string(args[2]))
 	if err != nil {
 		return err
@@ -172,11 +174,11 @@ func cmdRPUSHEX(wf writeFunc, ctx *context, args [][]byte) error {
 	return arrayPush(wf, ctx, args, "RPUSH", ttl)
 }
 
-func cmdLPUSH(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdLPUSH(wf io.Writer, ctx *context, args [][]byte) error {
 	return arrayPush(wf, ctx, args, "LPUSH", -1)
 }
 
-func cmdLPUSHEX(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdLPUSHEX(wf io.Writer, ctx *context, args [][]byte) error {
 	ttl, err := strconv.Atoi(string(args[2]))
 	if err != nil {
 		return err
@@ -185,7 +187,7 @@ func cmdLPUSHEX(wf writeFunc, ctx *context, args [][]byte) error {
 	return arrayPush(wf, ctx, args, "LPUSH", ttl)
 }
 
-func arrayPop(wf writeFunc, ctx *context, args [][]byte, f string) error {
+func arrayPop(wf io.Writer, ctx *context, args [][]byte, f string) error {
 	key, err := buildKey(ctx, args[0])
 	if err != nil {
 		return err
@@ -222,15 +224,15 @@ func arrayPop(wf writeFunc, ctx *context, args [][]byte, f string) error {
 	}
 }
 
-func cmdRPOP(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdRPOP(wf io.Writer, ctx *context, args [][]byte) error {
 	return arrayPop(wf, ctx, args, "RPOP")
 }
 
-func cmdLPOP(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdLPOP(wf io.Writer, ctx *context, args [][]byte) error {
 	return arrayPop(wf, ctx, args, "LPOP")
 }
 
-func cmdLLEN(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdLLEN(wf io.Writer, ctx *context, args [][]byte) error {
 	key, err := buildKey(ctx, args[0])
 	if err != nil {
 		return err
@@ -242,7 +244,7 @@ func cmdLLEN(wf writeFunc, ctx *context, args [][]byte) error {
 	return writeBinInt(wf, rec, binName+"_size")
 }
 
-func cmdLRANGE(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdLRANGE(wf io.Writer, ctx *context, args [][]byte) error {
 	key, err := buildKey(ctx, args[0])
 	if err != nil {
 		return err
@@ -265,7 +267,7 @@ func cmdLRANGE(wf writeFunc, ctx *context, args [][]byte) error {
 	return writeArray(wf, rec.([]interface{}))
 }
 
-func cmdLTRIM(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdLTRIM(wf io.Writer, ctx *context, args [][]byte) error {
 	key, err := buildKey(ctx, args[0])
 	if err != nil {
 		return err
@@ -288,7 +290,7 @@ func cmdLTRIM(wf writeFunc, ctx *context, args [][]byte) error {
 	return writeLine(wf, "+OK")
 }
 
-func hIncrByEx(wf writeFunc, ctx *context, k []byte, field string, incr int, ttl int) error {
+func hIncrByEx(wf io.Writer, ctx *context, k []byte, field string, incr int, ttl int) error {
 	key, err := buildKey(ctx, k)
 	if err != nil {
 		return err
@@ -304,15 +306,15 @@ func hIncrByEx(wf writeFunc, ctx *context, k []byte, field string, incr int, ttl
 	return writeBinInt(wf, rec, field)
 }
 
-func cmdINCR(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdINCR(wf io.Writer, ctx *context, args [][]byte) error {
 	return hIncrByEx(wf, ctx, args[0], binName, 1, -1)
 }
 
-func cmdDECR(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdDECR(wf io.Writer, ctx *context, args [][]byte) error {
 	return hIncrByEx(wf, ctx, args[0], binName, -1, -1)
 }
 
-func cmdINCRBY(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdINCRBY(wf io.Writer, ctx *context, args [][]byte) error {
 	incr, err := strconv.Atoi(string(args[1]))
 	if err != nil {
 		return err
@@ -320,7 +322,7 @@ func cmdINCRBY(wf writeFunc, ctx *context, args [][]byte) error {
 	return hIncrByEx(wf, ctx, args[0], binName, incr, -1)
 }
 
-func cmdHINCRBY(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdHINCRBY(wf io.Writer, ctx *context, args [][]byte) error {
 	incr, err := strconv.Atoi(string(args[2]))
 	if err != nil {
 		return err
@@ -328,7 +330,7 @@ func cmdHINCRBY(wf writeFunc, ctx *context, args [][]byte) error {
 	return hIncrByEx(wf, ctx, args[0], string(args[1]), incr, -1)
 }
 
-func cmdHINCRBYEX(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdHINCRBYEX(wf io.Writer, ctx *context, args [][]byte) error {
 	incr, err := strconv.Atoi(string(args[2]))
 	if err != nil {
 		return err
@@ -340,7 +342,7 @@ func cmdHINCRBYEX(wf writeFunc, ctx *context, args [][]byte) error {
 	return hIncrByEx(wf, ctx, args[0], string(args[1]), incr, ttl)
 }
 
-func cmdDECRBY(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdDECRBY(wf io.Writer, ctx *context, args [][]byte) error {
 	decr, err := strconv.Atoi(string(args[1]))
 	if err != nil {
 		return err
@@ -348,7 +350,7 @@ func cmdDECRBY(wf writeFunc, ctx *context, args [][]byte) error {
 	return hIncrByEx(wf, ctx, args[0], binName, -decr, -1)
 }
 
-func cmdHMGET(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdHMGET(wf io.Writer, ctx *context, args [][]byte) error {
 	key, err := buildKey(ctx, args[0])
 	if err != nil {
 		return err
@@ -374,7 +376,7 @@ func cmdHMGET(wf writeFunc, ctx *context, args [][]byte) error {
 	return nil
 }
 
-func cmdHMSET(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdHMSET(wf io.Writer, ctx *context, args [][]byte) error {
 	key, err := buildKey(ctx, args[0])
 	if err != nil {
 		return err
@@ -390,7 +392,7 @@ func cmdHMSET(wf writeFunc, ctx *context, args [][]byte) error {
 	return writeLine(wf, "+"+rec.(string))
 }
 
-func cmdHGETALL(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdHGETALL(wf io.Writer, ctx *context, args [][]byte) error {
 	key, err := buildKey(ctx, args[0])
 	if err != nil {
 		return err
@@ -417,7 +419,7 @@ func cmdHGETALL(wf writeFunc, ctx *context, args [][]byte) error {
 	return nil
 }
 
-func cmdEXPIRE(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdEXPIRE(wf io.Writer, ctx *context, args [][]byte) error {
 	key, err := buildKey(ctx, args[0])
 	if err != nil {
 		return err
@@ -438,7 +440,7 @@ func cmdEXPIRE(wf writeFunc, ctx *context, args [][]byte) error {
 	return writeLine(wf, ":1")
 }
 
-func cmdTTL(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdTTL(wf io.Writer, ctx *context, args [][]byte) error {
 	key, err := buildKey(ctx, args[0])
 	if err != nil {
 		return err
@@ -454,31 +456,22 @@ func cmdTTL(wf writeFunc, ctx *context, args [][]byte) error {
 	return writeLine(wf, ":"+strconv.FormatUint(uint64(rec.Expiration), 10))
 }
 
-func cmdFLUSHDB(wf writeFunc, ctx *context, args [][]byte) error {
-	recordset, err := ctx.client.ScanAll(nil, ctx.ns, ctx.set)
+func cmdFLUSHDB(wf io.Writer, ctx *context, args [][]byte) error {
+	stmt := as.NewStatement(ctx.ns, ctx.set)
+	delTask, err := ctx.client.ExecuteUDF(nil, stmt, MODULE_NAME, "DELETE")
 	if err != nil {
 		return err
 	}
 
-	err = nil
-	for res := range recordset.Results() {
-		if res.Err != nil {
-			err = res.Err
-			break
-		}
-		_, err = ctx.client.Delete(ctx.writePolicy, res.Record.Key)
-		if err != nil {
-			break
-		}
-	}
-	if err != nil {
+	if err := <-delTask.OnComplete(); err != nil {
+		log.Println("ERROR:", err)
 		return err
 	}
 
 	return writeLine(wf, "+OK")
 }
 
-func cmdHMINCRBYEX(wf writeFunc, ctx *context, args [][]byte) error {
+func cmdHMINCRBYEX(wf io.Writer, ctx *context, args [][]byte) error {
 	key, err := buildKey(ctx, args[0])
 	if err != nil {
 		return err

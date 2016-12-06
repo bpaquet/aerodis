@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"io"
 	"log"
 	"net"
 	"strconv"
@@ -28,7 +29,7 @@ func writeBack(handlers map[string]handler, config map[string]interface{}, ctx *
 		a := make([]interface{}, 2)
 		m["args"] = a
 		log.Printf("%s: Using write back for setTimeout to %s", ctx.set, config["write_back_target"])
-		f := func(wf writeFunc, ctx *context, args [][]byte) error {
+		f := func(wf io.Writer, ctx *context, args [][]byte) error {
 			key := string(args[0])
 			ttl, err := strconv.Atoi(string(args[1]))
 			if err != nil {
@@ -54,7 +55,7 @@ func writeBack(handlers map[string]handler, config map[string]interface{}, ctx *
 		a := make([]interface{}, 3)
 		m["args"] = a
 		log.Printf("%s: Using write back for hIncrBy to %s", ctx.set, config["write_back_target"])
-		f := func(wf writeFunc, ctx *context, args [][]byte) error {
+		f := func(wf io.Writer, ctx *context, args [][]byte) error {
 			key := string(args[0])
 			field := string(args[1])
 			incr, err := strconv.Atoi(string(args[2]))
