@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/base64"
 	"io"
-	"log"
 	"strconv"
 	"strings"
 
@@ -458,13 +457,13 @@ func cmdTTL(wf io.Writer, ctx *context, args [][]byte) error {
 
 func cmdFLUSHDB(wf io.Writer, ctx *context, args [][]byte) error {
 	stmt := as.NewStatement(ctx.ns, ctx.set)
-	delTask, err := ctx.client.ExecuteUDF(nil, stmt, MODULE_NAME, "DELETE")
+	del, err := ctx.client.ExecuteUDF(nil, stmt, MODULE_NAME, "FLUSHDB")
 	if err != nil {
 		return err
 	}
 
-	if err := <-delTask.OnComplete(); err != nil {
-		log.Println("ERROR:", err)
+	err = <- del.OnComplete()
+	if err != nil {
 		return err
 	}
 

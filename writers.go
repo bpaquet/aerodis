@@ -73,7 +73,8 @@ func writeArray(wf io.Writer, array []interface{}) error {
 }
 
 func write(wf io.Writer, b []byte) error {
-	if _, err := wf.Write(b); err != nil {
+	_, err := wf.Write(b)
+	if err != nil {
 		return err
 	}
 
@@ -81,16 +82,17 @@ func write(wf io.Writer, b []byte) error {
 }
 
 func writeLine(wf io.Writer, s string) error {
-	if err := write(wf, []byte(s)); err != nil {
+	err := write(wf, []byte(s))
+	if err != nil {
 		return err
 	}
 
-	if err := write(wf, []byte("\r\n")); err != nil {
+	err = write(wf, []byte("\r\n"))
+	if err != nil {
 		return err
 	}
 
 	return nil
-	// return wf([]byte(s + "\r\n"))
 }
 
 func writeValue(wf io.Writer, x interface{}) error {

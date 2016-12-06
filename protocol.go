@@ -7,8 +7,8 @@ import (
 	"strconv"
 )
 
-func readLine(ctx *bufio.Reader, prefix []byte) ([]byte, error) {
-	line, isPrefix, err := ctx.ReadLine()
+func readLine(reader *bufio.Reader, prefix []byte) ([]byte, error) {
+	line, isPrefix, err := reader.ReadLine()
 	if err != nil {
 		return nil, err
 	}
@@ -18,27 +18,30 @@ func readLine(ctx *bufio.Reader, prefix []byte) ([]byte, error) {
 	}
 
 	if isPrefix {
-		return readLine(ctx, line)
+		return readLine(reader, line)
 	}
 
 	return line, nil
 }
 
-func readByteArray(ctx *bufio.Reader, size int) ([]byte, error) {
+func readByteArray(reader *bufio.Reader, size int) ([]byte, error) {
 	// read the \r\n as well
 	size += 2
 	res := make([]byte, size)
-	n, err := io.ReadFull(ctx, res)
+	n, err := io.ReadFull(reader, res)
+	if err != nil {
+		return nil, err
+	}
 	if n != size {
-		return nil, errors.New("protocol parse error: byte array size mismatch")
+		return nil, errors.New("Protocol parse error: byte array size mismatch")
 	}
 
 	// don't return the \r\n
-	return res[:size-2], err
+	return res[:size-2], nil
 }
 
-func parse(ctx *bufio.Reader) ([][]byte, error) {
-	line, err := readLine(ctx, nil)
+func parse(reader *bufio.Reader) ([][]byte, error) {
+	line, err := readLine(reader, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +55,7 @@ func parse(ctx *bufio.Reader) ([][]byte, error) {
 		count = arrayCount
 		args = make([][]byte, arrayCount)
 		for i := 0; i < arrayCount; i++ {
-			line, err = readLine(ctx, nil)
+			line, err = readLine(reader, nil)
 			if err != nil {
 				return nil, err
 			}
@@ -61,7 +64,7 @@ func parse(ctx *bufio.Reader) ([][]byte, error) {
 				if err != nil {
 					return nil, err
 				}
-				res, err := readByteArray(ctx, argLen)
+				res, err := readByteArray(reader, argLen)
 				if err != nil {
 					return nil, err
 				}

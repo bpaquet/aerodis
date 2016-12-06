@@ -18,7 +18,7 @@ local function UPDATE(rec)
 	end
 end
 
-function DELETE(rec)
+function FLUSHDB(rec)
 	aerospike:remove(rec)
 end
 

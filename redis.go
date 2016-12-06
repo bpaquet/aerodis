@@ -256,9 +256,9 @@ func handleConnection(conn net.Conn, handlers map[string]handler, ctx *context) 
 
 	errorPrefix := "[" + (*ctx).set + "] "
 
-	readingCtx := bufio.NewReader(conn)
+	reader := bufio.NewReaderSize(conn, 1024)
 	for {
-		args, err := parse(readingCtx)
+		args, err := parse(reader)
 		if err != nil {
 			if err == io.EOF {
 				return handleError(nil, ctx, conn)
@@ -306,7 +306,8 @@ func handleCommand(wf io.Writer, args [][]byte, handlers map[string]handler, ctx
 	case "MULTI":
 		*multiCounter = 0
 		multiBuffer.Reset()
-		if err := writeLine(wf, "+OK"); err != nil {
+		err := writeLine(wf, "+OK")
+		if err != nil {
 			return err
 		}
 		*multiMode = true
@@ -322,7 +323,8 @@ func handleCommand(wf io.Writer, args [][]byte, handlers map[string]handler, ctx
 			return err
 		}
 
-		if err = write(wf, multiBuffer.Bytes()); err != nil {
+		err = write(wf, multiBuffer.Bytes())
+		if err != nil {
 			return err
 		}
 
@@ -332,13 +334,15 @@ func handleCommand(wf io.Writer, args [][]byte, handlers map[string]handler, ctx
 		}
 
 		*multiMode = false
-		if err := writeLine(wf, "+OK"); err != nil {
+		err := writeLine(wf, "+OK")
+		if err != nil {
 			return err
 		}
 
 	default:
 		args = args[1:]
-		if h, ok := handlers[cmd]; ok {
+		h, ok := handlers[cmd]
+		if ok {
 			if h.argsCount > len(args) {
 				return fmt.Errorf("Wrong number of params for '%s': %d", cmd, len(args))
 			}
@@ -351,7 +355,8 @@ func handleCommand(wf io.Writer, args [][]byte, handlers map[string]handler, ctx
 				}
 				targetWriter = multiBuffer
 			}
-			if err := h.f(targetWriter, ctx, args); err != nil {
+			err := h.f(targetWriter, ctx, args)
+			if err != nil {
 				return fmt.Errorf("Aerospike error: '%s'", err)
 			}
 		} else {
