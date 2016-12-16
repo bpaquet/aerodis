@@ -18,6 +18,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+	"syscall"
 
 	as "github.com/aerospike/aerospike-client-go"
 	"github.com/coocood/freecache"
@@ -130,6 +131,19 @@ func main() {
 	}
 
 	m := parsedConfig.(map[string]interface{})
+
+	if m["max_fds"] != nil {
+		maxFds := getIntFromJson(m["max_fds"])
+		var rLimit syscall.Rlimit
+		rLimit.Max = uint64(maxFds)
+		rLimit.Cur = uint64(maxFds)
+		err := syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit)
+	  if err != nil {
+	  	panic(err)
+	  }
+	  log.Printf("Set max openfile to %d", maxFds)
+	}
+
 	jsonAeroHost := m["aerospike_ips"]
 
 	aPort := *aeroPort
