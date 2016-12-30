@@ -9,6 +9,16 @@ import (
 	"strings"
 )
 
+func sendMessage(wf io.Writer, conn *net.UDPConn, cacheName string, key string, m map[string]interface{}) error {
+		v, err := json.Marshal(m)
+		if err != nil {
+			return err
+		}
+		s := strings.Replace(cacheName + "_" + key, "|", "_", -1) + "|" + string(v)
+		udpSend(conn, s)
+		return writeLine(wf, "+OK")
+}
+
 func writeBack(handlers map[string]handler, config map[string]interface{}, ctx *context) map[string]handler {
 	if config["write_back_target"] == nil {
 		return handlers
@@ -37,13 +47,7 @@ func writeBack(handlers map[string]handler, config map[string]interface{}, ctx *
 			}
 			a[0] = key
 			a[1] = ttl
-			v, err := json.Marshal(m)
-			if err != nil {
-				return err
-			}
-			s := cacheName + "_" + key + "|" + string(v)
-			udpSend(conn, s)
-			return writeLine(wf, "+OK")
+			return sendMessage(wf, conn, cacheName, key, m)
 		}
 		handlers["EXPIRE"] = handler{handlers["EXPIRE"].argsCount, f}
 	}
@@ -65,13 +69,7 @@ func writeBack(handlers map[string]handler, config map[string]interface{}, ctx *
 			a[0] = key
 			a[1] = field
 			a[2] = incr
-			v, err := json.Marshal(m)
-			if err != nil {
-				return err
-			}
-			s := cacheName + "_" + key + "|" + string(v)
-			udpSend(conn, s)
-			return writeLine(wf, "+OK")
+			return sendMessage(wf, conn, cacheName, key, m)
 		}
 		handlers["HINCRBY"] = handler{handlers["HINCRBY"].argsCount, f}
 	}
