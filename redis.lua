@@ -117,7 +117,7 @@ function LTRIM (rec, bin, start, stop)
 	return "OK"
 end
 
-function RPOP(rec, bin, count, ttl)
+function RPOP (rec, bin, count, ttl)
 	if (EXISTS(rec, bin)) then
 		local l = rec[bin]
  		local result_list = nil
@@ -144,7 +144,7 @@ function RPOP(rec, bin, count, ttl)
 	return nil
 end
 
-function RPUSH(rec, bin, value, ttl)
+function RPUSH (rec, bin, value, ttl)
 	local l = rec[bin]
 	if (l == nil) then
 		l = list()
@@ -160,7 +160,7 @@ function RPUSH(rec, bin, value, ttl)
 	return length
 end
 
-function HSET(rec, bin, value)
+function HSET (rec, bin, value)
 	local created = 1
 	if (EXISTS(rec, bin)) then
 		created = 0
@@ -170,7 +170,7 @@ function HSET(rec, bin, value)
 	return created
 end
 
-function HDEL(rec, bin)
+function HDEL (rec, bin)
 	if (EXISTS(rec, bin)) then
 		rec[bin] = nil
 		UPDATE(rec)
@@ -179,7 +179,7 @@ function HDEL(rec, bin)
 	return 0
 end
 
-function HGETALL(rec)
+function HGETALL (rec)
 	local l = list()
 	if record.ttl(rec) < (MAX_INT - 60) then
 		local names = record.bin_names(rec)
@@ -191,7 +191,7 @@ function HGETALL(rec)
 	return l
 end
 
-function HMSET(rec, field_value_map)
+function HMSET (rec, field_value_map)
 	for k,v in map.iterator(field_value_map) do
 		rec[k] = v
 	end
