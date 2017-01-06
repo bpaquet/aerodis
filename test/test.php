@@ -421,18 +421,38 @@ if (!isset($_ENV['USE_REAL_REDIS'])) {
   compare_map($r->hGetAll('myKey'), array('key' => '12'));
 }
 
-// echo("hSet / setTimeout");
-// $r->del('myKey');
-// compare($r->hSet('myKey', "b", 2), 1);
-// compare($r->setTimeout('myKey', 200), true);
-// upper($r->ttl('myKey'), 100);
-// lower($r->ttl('myKey'), 1000);
-// compare($r->hSet('myKey', "b", 3), 0);
-// upper($r->ttl('myKey'), 100);
-// lower($r->ttl('myKey'), 1000);
-// compare($r->hSet('myKey', "a", 3), 1);
-// upper($r->ttl('myKey'), 100);
-// lower($r->ttl('myKey'), 1000);
+echo("set setTimeout\n");
+$r->del('myKey');
+compare($r->set('myKey', "a"), true);
+compare($r->setTimeout('myKey', 200), true);
+upper($r->ttl('myKey'), 100);
+lower($r->ttl('myKey'), 1000);
+compare($r->set('myKey', "b"), true);
+upper($r->ttl('myKey'), 100);
+lower($r->ttl('myKey'), 1000);
+
+echo("hSet setTimeout\n");
+$r->del('myKey');
+compare($r->hSet('myKey', "b", 2), 1);
+compare($r->setTimeout('myKey', 200), true);
+upper($r->ttl('myKey'), 100);
+lower($r->ttl('myKey'), 1000);
+compare($r->hSet('myKey', "b", 3), 0);
+upper($r->ttl('myKey'), 100);
+lower($r->ttl('myKey'), 1000);
+compare($r->hSet('myKey', "a", 3), 1);
+upper($r->ttl('myKey'), 100);
+lower($r->ttl('myKey'), 1000);
+
+echo("rpush setTimeout\n");
+$r->del('myKey');
+compare($r->rpush('myKey', "a"), 1);
+compare($r->setTimeout('myKey', 200), true);
+upper($r->ttl('myKey'), 100);
+lower($r->ttl('myKey'), 1000);
+compare($r->rpush('myKey', "b"), 2);
+upper($r->ttl('myKey'), 100);
+lower($r->ttl('myKey'), 1000);
 
 echo("Exec Multi\n");
 

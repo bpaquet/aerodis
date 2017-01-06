@@ -4,7 +4,7 @@ pkill aerodis || true
 
 echo "Recompiling"
 cd ..
-go build
+go build -tags="as_performance"
 cd test
 
 echo "Standard test"
