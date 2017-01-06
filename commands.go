@@ -69,7 +69,7 @@ func setex(wf io.Writer, ctx *context, k []byte, binName string, content []byte,
 	rec := as.BinMap{
 		binName: encode(ctx, content),
 	}
-	err = ctx.client.Put(fillWritePolicyEx(ctx, ttl, createOnly), key, rec)
+	err = ctx.client.Put(fillWritePolicyEx(ttl, createOnly), key, rec)
 	if err != nil {
 		if createOnly && errResultCode(err) == ase.KEY_EXISTS_ERROR {
 			return writeLine(wf, ":0")
@@ -295,7 +295,7 @@ func hIncrByEx(wf io.Writer, ctx *context, k []byte, field string, incr int, ttl
 		return err
 	}
 	bin := as.NewBin(field, incr)
-	rec, err := ctx.client.Operate(fillWritePolicyEx(ctx, ttl, false), key, as.AddOp(bin), as.GetOpForBin(field))
+	rec, err := ctx.client.Operate(fillWritePolicyEx(ttl, false), key, as.AddOp(bin), as.GetOpForBin(field))
 	if err != nil {
 		if errResultCode(err) == ase.BIN_TYPE_ERROR {
 			return writeLine(wf, "$-1")
@@ -429,7 +429,7 @@ func cmdEXPIRE(wf io.Writer, ctx *context, args [][]byte) error {
 		return err
 	}
 
-	err = ctx.client.Touch(fillWritePolicyEx(ctx, ttl, false), key)
+	err = ctx.client.Touch(fillWritePolicyEx(ttl, false), key)
 	if err != nil {
 		if errResultCode(err) == ase.KEY_NOT_FOUND_ERROR {
 			return writeLine(wf, ":0")
@@ -480,7 +480,7 @@ func cmdHMINCRBYEX(wf io.Writer, ctx *context, args [][]byte) error {
 		return err
 	}
 	if len(args) == 2 {
-		err := ctx.client.Touch(fillWritePolicyEx(ctx, ttl, false), key)
+		err := ctx.client.Touch(fillWritePolicyEx(ttl, false), key)
 		if err != nil {
 			if errResultCode(err) != ase.KEY_NOT_FOUND_ERROR {
 				return err
@@ -497,7 +497,7 @@ func cmdHMINCRBYEX(wf io.Writer, ctx *context, args [][]byte) error {
 		}
 		ops = append(ops, as.AddOp(as.NewBin(string(a[i]), incr)))
 	}
-	_, err = ctx.client.Operate(fillWritePolicyEx(ctx, ttl, false), key, ops...)
+	_, err = ctx.client.Operate(fillWritePolicyEx(ttl, false), key, ops...)
 	if err != nil {
 		return err
 	}

@@ -2,6 +2,10 @@
 
 pkill aerodis || true
 
+cd ..
+go build
+cd test
+
 echo "Standard test"
 ../aerodis --config_file config.json &
 sleep 3

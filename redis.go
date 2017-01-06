@@ -175,10 +175,7 @@ func main() {
 	}
 
 	readPolicy := as.NewPolicy()
-	fillReadPolicy(readPolicy)
-
-	writePolicy := as.NewWritePolicy(0, 0)
-	fillWritePolicy(writePolicy)
+	writePolicy := fillWritePolicyEx(-1, false)
 
 	var wg sync.WaitGroup
 

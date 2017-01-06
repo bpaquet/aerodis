@@ -394,7 +394,6 @@ if (!isset($_ENV['USE_REAL_REDIS'])) {
 
   echo("Batch\n");
 
-  $r->del('myKey');
   if (isset($_ENV['EXPANDED_MAP'])) {
     $r->del('myKey2');
     $r->del('myKey3');
@@ -406,6 +405,7 @@ if (!isset($_ENV['USE_REAL_REDIS'])) {
     upper($r->ttl('myKey3'), 2000);
   }
 
+  $r->del('myKey');
   compare($r->hmincrbyex('myKey', array('key' => 1, 'key2' => 5), 10), true);
   compare_map($r->hGetAll('myKey'), array('key' => '1', 'key2' => '5'));
   compare($r->hmincrbyex('myKey', array('key2' => 6), 200), true);
@@ -416,7 +416,23 @@ if (!isset($_ENV['USE_REAL_REDIS'])) {
   compare_map($r->hGetAll('myKey'), array('key' => '1', 'key2' => '11', 'key3' => '12'));
   sleep(5);
   compare_map($r->hGetAll('myKey'), array());
+  $r->del('myKey');
+  compare($r->hmincrbyex('myKey', array('key' => 12), -1), true);
+  compare_map($r->hGetAll('myKey'), array('key' => '12'));
 }
+
+// echo("hSet / setTimeout");
+// $r->del('myKey');
+// compare($r->hSet('myKey', "b", 2), 1);
+// compare($r->setTimeout('myKey', 200), true);
+// upper($r->ttl('myKey'), 100);
+// lower($r->ttl('myKey'), 1000);
+// compare($r->hSet('myKey', "b", 3), 0);
+// upper($r->ttl('myKey'), 100);
+// lower($r->ttl('myKey'), 1000);
+// compare($r->hSet('myKey', "a", 3), 1);
+// upper($r->ttl('myKey'), 100);
+// lower($r->ttl('myKey'), 1000);
 
 echo("Exec Multi\n");
 

@@ -14,8 +14,8 @@ func fillWritePolicy(writePolicy *as.WritePolicy) {
 	writePolicy.CommitLevel = as.COMMIT_MASTER
 }
 
-func fillWritePolicyEx(ctx *context, ttl int, createOnly bool) *as.WritePolicy {
-	policy := as.NewWritePolicy(0, 0)
+func fillWritePolicyEx(ttl int, createOnly bool) *as.WritePolicy {
+	policy := as.NewWritePolicy(0, as.TTLDontUpdate)
 	if ttl != -1 {
 		policy = as.NewWritePolicy(0, uint32(ttl))
 	}
