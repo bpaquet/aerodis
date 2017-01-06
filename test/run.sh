@@ -2,6 +2,7 @@
 
 pkill aerodis || true
 
+echo "Recompiling"
 cd ..
 go build
 cd test

@@ -66,10 +66,7 @@ func setex(wf io.Writer, ctx *context, k []byte, binName string, content []byte,
 	if err != nil {
 		return err
 	}
-	rec := as.BinMap{
-		binName: encode(ctx, content),
-	}
-	err = ctx.client.Put(fillWritePolicyEx(ttl, createOnly), key, rec)
+	err = ctx.client.PutBins(fillWritePolicyEx(ttl, createOnly), key, as.NewBin(binName, encode(ctx, content)))
 	if err != nil {
 		if createOnly && errResultCode(err) == ase.KEY_EXISTS_ERROR {
 			return writeLine(wf, ":0")
@@ -100,10 +97,7 @@ func cmdMSET(wf io.Writer, ctx *context, args [][]byte) error {
 		if err != nil {
 			return err
 		}
-		rec := as.BinMap{
-			binName: encode(ctx, args[i+1]),
-		}
-		err = ctx.client.Put(ctx.writePolicy, key, rec)
+		err = ctx.client.PutBins(ctx.writePolicy, key, as.NewBin(binName, encode(ctx, args[i+1])))
 		if err != nil {
 			return err
 		}
