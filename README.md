@@ -54,6 +54,8 @@ Some functions which do not exist in Aerospike are implemented:
 * ``setnex``: ``setex``, but only if the entry does not exists.
 * `hincrbyex`: ``hincrby`` with a TTL. TTL is the last params.
 * ``hmincrybyex``: mutiple hincrby in the same call. Syntax: ``key ttl [field1 incr1] [field2 incr2]``
+* ``hsetex``: ``hset``, with a TTL. TTL is the second param.
+
 Note: modification of the PHP driver is needed to use these functions from PHP: [v5.x](https://github.com/bpaquet/phpredis/tree/2.2.7_patched) and [v7](https://github.com/bpaquet/phpredis/tree/3.0.0_patched).
 
 ## Map functions:

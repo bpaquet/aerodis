@@ -54,6 +54,7 @@ func standardHandlers() map[string]handler {
 	handlers["DECRBY"] = handler{2, cmdDECRBY}
 	handlers["HGET"] = handler{2, cmdHGET}
 	handlers["HSET"] = handler{3, cmdHSET}
+	handlers["HSETEX"] = handler{4, cmdHSETEX}
 	handlers["HDEL"] = handler{2, cmdHDEL}
 	handlers["HMGET"] = handler{2, cmdHMGET}
 	handlers["HMSET"] = handler{3, cmdHMSET}
@@ -72,6 +73,7 @@ func expandedMapHandlers() map[string]handler {
 	handlers["HINCRBYEX"] = handler{4, cmdExpandedMapHINCRBYEX}
 	handlers["HGET"] = handler{2, cmdExpandedMapHGET}
 	handlers["HSET"] = handler{3, cmdExpandedMapHSET}
+	handlers["HSETEX"] = handler{4, cmdExpandedMapHSETEX}
 	handlers["HDEL"] = handler{2, cmdExpandedMapHDEL}
 	handlers["HMGET"] = handler{2, cmdExpandedMapHMGET}
 	handlers["HMSET"] = handler{3, cmdExpandedMapHMSET}

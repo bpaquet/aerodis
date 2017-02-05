@@ -392,6 +392,14 @@ if (!isset($_ENV['USE_REAL_REDIS'])) {
   upper($r->ttl('myKey'), 100);
   lower($r->ttl('myKey'), 1000);
 
+  echo("hSetEx\n");
+  $r->del('myKey');
+  compare($r->hSetEx('myKey', 500, 'a', 2), 1);
+  compare($r->hSetEx('myKey', 500, 'a', 4), 0);
+  compare($r->hGet('myKey', 'a'), '4');
+  upper($r->ttl('myKey'), 100);
+  lower($r->ttl('myKey'), 1000);
+
   echo("Batch\n");
 
   if (isset($_ENV['EXPANDED_MAP'])) {
