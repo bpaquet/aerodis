@@ -19,8 +19,9 @@ type context struct {
 	readPolicy            *as.BasePolicy
 	writePolicy           *as.WritePolicy
 	backwardWriteCompat   bool
-	counterOk             uint32
-	counterErr            uint32
+	counterWbOk           int32
+	counterOk             int32
+	counterErr            int32
 	gaugeConn             int32
 	expandedMapDefaultTTL int
 	expandedMapCache      *freecache.Cache

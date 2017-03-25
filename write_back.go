@@ -7,6 +7,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"sync/atomic"
 )
 
 func sendMessage(wf io.Writer, conn *net.UDPConn, cacheName string, key string, m map[string]interface{}) error {
@@ -47,7 +48,10 @@ func writeBack(handlers map[string]handler, config map[string]interface{}, ctx *
 			}
 			a[0] = key
 			a[1] = ttl
-			return sendMessage(wf, conn, cacheName, key, m)
+			res := sendMessage(wf, conn, cacheName, key, m)
+			atomic.AddInt32(&ctx.counterOk, -1)
+			atomic.AddInt32(&ctx.counterWbOk, 1)
+			return res
 		}
 		handlers["EXPIRE"] = handler{handlers["EXPIRE"].argsCount, f}
 	}
@@ -69,7 +73,10 @@ func writeBack(handlers map[string]handler, config map[string]interface{}, ctx *
 			a[0] = key
 			a[1] = field
 			a[2] = incr
-			return sendMessage(wf, conn, cacheName, key, m)
+			res := sendMessage(wf, conn, cacheName, key, m)
+			atomic.AddInt32(&ctx.counterOk, -1)
+			atomic.AddInt32(&ctx.counterWbOk, 1)
+			return res
 		}
 		handlers["HINCRBY"] = handler{handlers["HINCRBY"].argsCount, f}
 	}

@@ -217,7 +217,7 @@ func main() {
 			backwardWriteCompat = true
 			log.Printf("%s: Write backward compat", set)
 		}
-		ctx := context{client, *ns, set, readPolicy, writePolicy, backwardWriteCompat, 0, 0, 0, 0, nil, 0}
+		ctx := context{client, *ns, set, readPolicy, writePolicy, backwardWriteCompat, 0, 0, 0, 0, 0, nil, 0}
 
 		if statsdConfig != nil {
 			log.Printf("%s: Sending stats to statsd %s", set, statsdConfig)
@@ -277,7 +277,7 @@ func handleConnection(conn net.Conn, handlers map[string]handler, ctx *context) 
 				return handleError(nil, ctx, conn)
 			}
 			writeErr(conn, errorPrefix, err.Error(), args)
-			atomic.AddUint32(&ctx.counterErr, 1)
+			atomic.AddInt32(&ctx.counterErr, 1)
 			return handleError(err, ctx, conn)
 		}
 
@@ -306,10 +306,10 @@ func handleConnection(conn net.Conn, handlers map[string]handler, ctx *context) 
 		execErr := handleCommand(conn, args, handlers, ctx, &multiMode, &multiCounter, multiBuffer)
 		if execErr != nil {
 			writeErr(conn, errorPrefix, execErr.Error(), args)
-			atomic.AddUint32(&ctx.counterErr, 1)
+			atomic.AddInt32(&ctx.counterErr, 1)
 			return handleError(execErr, ctx, conn)
 		}
-		atomic.AddUint32(&ctx.counterOk, 1)
+		atomic.AddInt32(&ctx.counterOk, 1)
 	}
 }
 
@@ -324,6 +324,7 @@ func handleCommand(wf io.Writer, args [][]byte, handlers map[string]handler, ctx
 			return err
 		}
 		*multiMode = true
+		atomic.AddInt32(&ctx.counterOk, -1)
 
 	case "EXEC":
 		if !*multiMode {
@@ -340,6 +341,7 @@ func handleCommand(wf io.Writer, args [][]byte, handlers map[string]handler, ctx
 		if err != nil {
 			return err
 		}
+		atomic.AddInt32(&ctx.counterOk, -1)
 
 	case "DISCARD":
 		if !*multiMode {
@@ -351,6 +353,7 @@ func handleCommand(wf io.Writer, args [][]byte, handlers map[string]handler, ctx
 		if err != nil {
 			return err
 		}
+		atomic.AddInt32(&ctx.counterOk, -1)
 
 	default:
 		args = args[1:]
