@@ -309,7 +309,6 @@ func handleConnection(conn net.Conn, handlers map[string]handler, ctx *context) 
 			atomic.AddInt32(&ctx.counterErr, 1)
 			return handleError(execErr, ctx, conn)
 		}
-		atomic.AddInt32(&ctx.counterOk, 1)
 	}
 }
 
@@ -324,7 +323,6 @@ func handleCommand(wf io.Writer, args [][]byte, handlers map[string]handler, ctx
 			return err
 		}
 		*multiMode = true
-		atomic.AddInt32(&ctx.counterOk, -1)
 
 	case "EXEC":
 		if !*multiMode {
@@ -341,7 +339,6 @@ func handleCommand(wf io.Writer, args [][]byte, handlers map[string]handler, ctx
 		if err != nil {
 			return err
 		}
-		atomic.AddInt32(&ctx.counterOk, -1)
 
 	case "DISCARD":
 		if !*multiMode {
@@ -353,7 +350,6 @@ func handleCommand(wf io.Writer, args [][]byte, handlers map[string]handler, ctx
 		if err != nil {
 			return err
 		}
-		atomic.AddInt32(&ctx.counterOk, -1)
 
 	default:
 		args = args[1:]
@@ -375,6 +371,7 @@ func handleCommand(wf io.Writer, args [][]byte, handlers map[string]handler, ctx
 			if err != nil {
 				return fmt.Errorf("Aerospike error: '%s'", err)
 			}
+			atomic.AddInt32(&ctx.counterOk, 1)
 		} else {
 			return fmt.Errorf("Unknown command '%s'", cmd)
 		}
