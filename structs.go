@@ -10,6 +10,7 @@ import (
 type handler struct {
 	argsCount int
 	f         func(io.Writer, *context, [][]byte) error
+	writeBack bool
 }
 
 type context struct {
@@ -19,9 +20,9 @@ type context struct {
 	readPolicy            *as.BasePolicy
 	writePolicy           *as.WritePolicy
 	backwardWriteCompat   bool
-	counterWbOk           int32
-	counterOk             int32
-	counterErr            int32
+	counterWbOk           uint32
+	counterOk             uint32
+	counterErr            uint32
 	gaugeConn             int32
 	expandedMapDefaultTTL int
 	expandedMapCache      *freecache.Cache

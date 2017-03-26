@@ -29,58 +29,58 @@ const MODULE_NAME = "redis"
 
 func standardHandlers() map[string]handler {
 	handlers := make(map[string]handler)
-	handlers["DEL"] = handler{1, cmdDEL}
-	handlers["GET"] = handler{1, cmdGET}
-	handlers["SET"] = handler{2, cmdSET}
-	handlers["SETEX"] = handler{3, cmdSETEX}
-	handlers["SETNXEX"] = handler{3, cmdSETNXEX}
-	handlers["SETNX"] = handler{2, cmdSETNX}
-	handlers["MGET"] = handler{2, cmdMGET}
-	handlers["MSET"] = handler{2, cmdMSET}
-	handlers["LLEN"] = handler{1, cmdLLEN}
-	handlers["RPUSH"] = handler{2, cmdRPUSH}
-	handlers["LPUSH"] = handler{2, cmdLPUSH}
-	handlers["RPUSHEX"] = handler{3, cmdRPUSHEX}
-	handlers["LPUSHEX"] = handler{3, cmdLPUSHEX}
-	handlers["RPOP"] = handler{1, cmdRPOP}
-	handlers["LPOP"] = handler{1, cmdLPOP}
-	handlers["LRANGE"] = handler{3, cmdLRANGE}
-	handlers["LTRIM"] = handler{3, cmdLTRIM}
-	handlers["INCR"] = handler{1, cmdINCR}
-	handlers["INCRBY"] = handler{2, cmdINCRBY}
-	handlers["HINCRBY"] = handler{3, cmdHINCRBY}
-	handlers["HINCRBYEX"] = handler{4, cmdHINCRBYEX}
-	handlers["DECR"] = handler{1, cmdDECR}
-	handlers["DECRBY"] = handler{2, cmdDECRBY}
-	handlers["HGET"] = handler{2, cmdHGET}
-	handlers["HSET"] = handler{3, cmdHSET}
-	handlers["HSETEX"] = handler{4, cmdHSETEX}
-	handlers["HDEL"] = handler{2, cmdHDEL}
-	handlers["HMGET"] = handler{2, cmdHMGET}
-	handlers["HMSET"] = handler{3, cmdHMSET}
-	handlers["HMINCRBYEX"] = handler{2, cmdHMINCRBYEX}
-	handlers["HGETALL"] = handler{1, cmdHGETALL}
-	handlers["EXPIRE"] = handler{2, cmdEXPIRE}
-	handlers["TTL"] = handler{1, cmdTTL}
-	handlers["FLUSHDB"] = handler{0, cmdFLUSHDB}
+	handlers["DEL"] = handler{1, cmdDEL, false}
+	handlers["GET"] = handler{1, cmdGET, false}
+	handlers["SET"] = handler{2, cmdSET, false}
+	handlers["SETEX"] = handler{3, cmdSETEX, false}
+	handlers["SETNXEX"] = handler{3, cmdSETNXEX, false}
+	handlers["SETNX"] = handler{2, cmdSETNX, false}
+	handlers["MGET"] = handler{2, cmdMGET, false}
+	handlers["MSET"] = handler{2, cmdMSET, false}
+	handlers["LLEN"] = handler{1, cmdLLEN, false}
+	handlers["RPUSH"] = handler{2, cmdRPUSH, false}
+	handlers["LPUSH"] = handler{2, cmdLPUSH, false}
+	handlers["RPUSHEX"] = handler{3, cmdRPUSHEX, false}
+	handlers["LPUSHEX"] = handler{3, cmdLPUSHEX, false}
+	handlers["RPOP"] = handler{1, cmdRPOP, false}
+	handlers["LPOP"] = handler{1, cmdLPOP, false}
+	handlers["LRANGE"] = handler{3, cmdLRANGE, false}
+	handlers["LTRIM"] = handler{3, cmdLTRIM, false}
+	handlers["INCR"] = handler{1, cmdINCR, false}
+	handlers["INCRBY"] = handler{2, cmdINCRBY, false}
+	handlers["HINCRBY"] = handler{3, cmdHINCRBY, false}
+	handlers["HINCRBYEX"] = handler{4, cmdHINCRBYEX, false}
+	handlers["DECR"] = handler{1, cmdDECR, false}
+	handlers["DECRBY"] = handler{2, cmdDECRBY, false}
+	handlers["HGET"] = handler{2, cmdHGET, false}
+	handlers["HSET"] = handler{3, cmdHSET, false}
+	handlers["HSETEX"] = handler{4, cmdHSETEX, false}
+	handlers["HDEL"] = handler{2, cmdHDEL, false}
+	handlers["HMGET"] = handler{2, cmdHMGET, false}
+	handlers["HMSET"] = handler{3, cmdHMSET, false}
+	handlers["HMINCRBYEX"] = handler{2, cmdHMINCRBYEX, false}
+	handlers["HGETALL"] = handler{1, cmdHGETALL, false}
+	handlers["EXPIRE"] = handler{2, cmdEXPIRE, false}
+	handlers["TTL"] = handler{1, cmdTTL, false}
+	handlers["FLUSHDB"] = handler{0, cmdFLUSHDB, false}
 	return handlers
 }
 
 func expandedMapHandlers() map[string]handler {
 	handlers := standardHandlers()
-	handlers["DEL"] = handler{1, cmdExpandedMapDEL}
-	handlers["HINCRBY"] = handler{3, cmdExpandedMapHINCRBY}
-	handlers["HINCRBYEX"] = handler{4, cmdExpandedMapHINCRBYEX}
-	handlers["HGET"] = handler{2, cmdExpandedMapHGET}
-	handlers["HSET"] = handler{3, cmdExpandedMapHSET}
-	handlers["HSETEX"] = handler{4, cmdExpandedMapHSETEX}
-	handlers["HDEL"] = handler{2, cmdExpandedMapHDEL}
-	handlers["HMGET"] = handler{2, cmdExpandedMapHMGET}
-	handlers["HMSET"] = handler{3, cmdExpandedMapHMSET}
-	handlers["HMINCRBYEX"] = handler{2, cmdExpandedMapHMINCRBYEX}
-	handlers["HGETALL"] = handler{1, cmdExpandedMapHGETALL}
-	handlers["EXPIRE"] = handler{2, cmdExpandedMapEXPIRE}
-	handlers["TTL"] = handler{1, cmdExpandedMapTTL}
+	handlers["DEL"] = handler{1, cmdExpandedMapDEL, false}
+	handlers["HINCRBY"] = handler{3, cmdExpandedMapHINCRBY, false}
+	handlers["HINCRBYEX"] = handler{4, cmdExpandedMapHINCRBYEX, false}
+	handlers["HGET"] = handler{2, cmdExpandedMapHGET, false}
+	handlers["HSET"] = handler{3, cmdExpandedMapHSET, false}
+	handlers["HSETEX"] = handler{4, cmdExpandedMapHSETEX, false}
+	handlers["HDEL"] = handler{2, cmdExpandedMapHDEL, false}
+	handlers["HMGET"] = handler{2, cmdExpandedMapHMGET, false}
+	handlers["HMSET"] = handler{3, cmdExpandedMapHMSET, false}
+	handlers["HMINCRBYEX"] = handler{2, cmdExpandedMapHMINCRBYEX, false}
+	handlers["HGETALL"] = handler{1, cmdExpandedMapHGETALL, false}
+	handlers["EXPIRE"] = handler{2, cmdExpandedMapEXPIRE, false}
+	handlers["TTL"] = handler{1, cmdExpandedMapTTL, false}
 	return handlers
 }
 
@@ -277,7 +277,7 @@ func handleConnection(conn net.Conn, handlers map[string]handler, ctx *context) 
 				return handleError(nil, ctx, conn)
 			}
 			writeErr(conn, errorPrefix, err.Error(), args)
-			atomic.AddInt32(&ctx.counterErr, 1)
+			atomic.AddUint32(&ctx.counterErr, 1)
 			return handleError(err, ctx, conn)
 		}
 
@@ -306,7 +306,7 @@ func handleConnection(conn net.Conn, handlers map[string]handler, ctx *context) 
 		execErr := handleCommand(conn, args, handlers, ctx, &multiMode, &multiCounter, multiBuffer)
 		if execErr != nil {
 			writeErr(conn, errorPrefix, execErr.Error(), args)
-			atomic.AddInt32(&ctx.counterErr, 1)
+			atomic.AddUint32(&ctx.counterErr, 1)
 			return handleError(execErr, ctx, conn)
 		}
 	}
@@ -371,7 +371,11 @@ func handleCommand(wf io.Writer, args [][]byte, handlers map[string]handler, ctx
 			if err != nil {
 				return fmt.Errorf("Aerospike error: '%s'", err)
 			}
-			atomic.AddInt32(&ctx.counterOk, 1)
+			if h.writeBack {
+				atomic.AddUint32(&ctx.counterOk, 1)
+			} else {
+				atomic.AddUint32(&ctx.counterWbOk, 1)
+			}
 		} else {
 			return fmt.Errorf("Unknown command '%s'", cmd)
 		}
