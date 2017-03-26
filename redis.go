@@ -372,9 +372,9 @@ func handleCommand(wf io.Writer, args [][]byte, handlers map[string]handler, ctx
 				return fmt.Errorf("Aerospike error: '%s'", err)
 			}
 			if h.writeBack {
-				atomic.AddUint32(&ctx.counterOk, 1)
-			} else {
 				atomic.AddUint32(&ctx.counterWbOk, 1)
+			} else {
+				atomic.AddUint32(&ctx.counterOk, 1)
 			}
 		} else {
 			return fmt.Errorf("Unknown command '%s'", cmd)
