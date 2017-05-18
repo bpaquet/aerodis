@@ -115,6 +115,7 @@ func main() {
 	aeroPort := flag.Int("aero_port", 3000, "Aerospike server port")
 	ns := flag.String("ns", "test", "Aerospike namespace")
 	configFile := flag.String("config_file", "", "Configuration file")
+	exitOnClusterLost := flag.Bool("exit_on_cluster_lost", true, "Exit with an error when the connection to the cluster is lost")
 	flag.Parse()
 
 	config := []byte("{\"sets\":[{\"proto\":\"tcp\",\"listen\":\"127.0.0.1:6379\",\"set\":\"redis\"}]}")
@@ -161,19 +162,23 @@ func main() {
 
 	var client *as.Client
 	var err error
+	connected := false
 
-	for _, i := range hosts {
-		log.Printf("Connecting to aero on %s:%d", i, aPort)
-		client, err = as.NewClient(i, aPort)
-		if err == nil {
-			log.Printf("Connected to aero on %s:%d, namespace %s", i, aPort, *ns)
-			break
-		} else {
-			log.Printf("Unable to connect to %s:%d, %s", i, aPort, err)
+	for ! connected {
+		for _, i := range hosts {
+			log.Printf("Connecting to aero on %s:%d", i, aPort)
+			client, err = as.NewClient(i, aPort)
+			if err == nil {
+				log.Printf("Connected to aero on %s:%d, namespace %s", i, aPort, *ns)
+				connected = true
+				break
+			} else {
+				log.Printf("Unable to connect to %s:%d, %s", i, aPort, err)
+			}
 		}
-	}
-	if err != nil {
-		panic(err)
+		if ! connected {
+			time.Sleep(5 * time.Second)
+		}
 	}
 
 	readPolicy := as.NewPolicy()
@@ -217,7 +222,7 @@ func main() {
 			backwardWriteCompat = true
 			log.Printf("%s: Write backward compat", set)
 		}
-		ctx := context{client, *ns, set, readPolicy, writePolicy, backwardWriteCompat, 0, 0, 0, 0, 0, nil, 0}
+		ctx := context{client, *exitOnClusterLost, *ns, set, readPolicy, writePolicy, backwardWriteCompat, 0, 0, 0, 0, 0, nil, 0}
 
 		if statsdConfig != nil {
 			log.Printf("%s: Sending stats to statsd %s", set, statsdConfig)
@@ -267,7 +272,7 @@ func handleConnection(conn net.Conn, handlers map[string]handler, ctx *context) 
 	multiMode := false
 	multiCounter := 0
 
-	errorPrefix := "[" + (*ctx).set + "] "
+	errorPrefix := "[" + (*ctx).set + "]"
 
 	reader := bufio.NewReaderSize(conn, 1024)
 	for {
@@ -369,6 +374,9 @@ func handleCommand(wf io.Writer, args [][]byte, handlers map[string]handler, ctx
 			}
 			err := h.f(targetWriter, ctx, args)
 			if err != nil {
+				if ! ctx.client.IsConnected() && ctx.exitOnClusterLost {
+					panic(fmt.Errorf("Connection to cluster lost: '%s'", err))
+				}
 				return fmt.Errorf("Aerospike error: '%s'", err)
 			}
 			if h.writeBack {

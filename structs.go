@@ -15,6 +15,7 @@ type handler struct {
 
 type context struct {
 	client                *as.Client
+	exitOnClusterLost			bool
 	ns                    string
 	set                   string
 	readPolicy            *as.BasePolicy
