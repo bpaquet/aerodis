@@ -134,7 +134,7 @@ func expandedMapHset(wf io.Writer, ctx *context, k []byte, kk []byte, v []byte, 
 	if err != nil {
 		return err
 	}
-	err = ctx.client.PutBins(ctx.writePolicy, key, as.NewBin(MAIN_KEY_BIN_NAME, *suffixedKey), as.NewBin(SECOND_KEY_BIN_NAME, string(kk)), as.NewBin(VALUE_BIN_NAME, encode(ctx, v)), as.NewBin("created_at", now()))
+	err = ctx.client.PutBins(fillWritePolicyEx(ctx.expandedMapDefaultTTL, false), key, as.NewBin(MAIN_KEY_BIN_NAME, *suffixedKey), as.NewBin(SECOND_KEY_BIN_NAME, string(kk)), as.NewBin(VALUE_BIN_NAME, encode(ctx, v)), as.NewBin("created_at", now()))
 	if err != nil {
 		return err
 	}
@@ -240,7 +240,7 @@ func cmdExpandedMapHMSET(wf io.Writer, ctx *context, args [][]byte) error {
 		if err != nil {
 			return err
 		}
-		err = ctx.client.PutBins(ctx.writePolicy, key, as.NewBin(MAIN_KEY_BIN_NAME, *suffixedKey), as.NewBin(SECOND_KEY_BIN_NAME, string(args[i])), as.NewBin(VALUE_BIN_NAME, encode(ctx, args[i+1])), as.NewBin("created_at", now()))
+		err = ctx.client.PutBins(fillWritePolicyEx(ctx.expandedMapDefaultTTL, false), key, as.NewBin(MAIN_KEY_BIN_NAME, *suffixedKey), as.NewBin(SECOND_KEY_BIN_NAME, string(args[i])), as.NewBin(VALUE_BIN_NAME, encode(ctx, args[i+1])), as.NewBin("created_at", now()))
 		if err != nil {
 			return err
 		}
