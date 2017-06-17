@@ -29,58 +29,58 @@ const MODULE_NAME = "redis"
 
 func standardHandlers() map[string]handler {
 	handlers := make(map[string]handler)
-	handlers["DEL"] = handler{1, cmdDEL, false}
-	handlers["GET"] = handler{1, cmdGET, false}
-	handlers["SET"] = handler{2, cmdSET, false}
-	handlers["SETEX"] = handler{3, cmdSETEX, false}
-	handlers["SETNXEX"] = handler{3, cmdSETNXEX, false}
-	handlers["SETNX"] = handler{2, cmdSETNX, false}
-	handlers["MGET"] = handler{2, cmdMGET, false}
-	handlers["MSET"] = handler{2, cmdMSET, false}
-	handlers["LLEN"] = handler{1, cmdLLEN, false}
-	handlers["RPUSH"] = handler{2, cmdRPUSH, false}
-	handlers["LPUSH"] = handler{2, cmdLPUSH, false}
-	handlers["RPUSHEX"] = handler{3, cmdRPUSHEX, false}
-	handlers["LPUSHEX"] = handler{3, cmdLPUSHEX, false}
-	handlers["RPOP"] = handler{1, cmdRPOP, false}
-	handlers["LPOP"] = handler{1, cmdLPOP, false}
-	handlers["LRANGE"] = handler{3, cmdLRANGE, false}
-	handlers["LTRIM"] = handler{3, cmdLTRIM, false}
-	handlers["INCR"] = handler{1, cmdINCR, false}
-	handlers["INCRBY"] = handler{2, cmdINCRBY, false}
-	handlers["HINCRBY"] = handler{3, cmdHINCRBY, false}
-	handlers["HINCRBYEX"] = handler{4, cmdHINCRBYEX, false}
-	handlers["DECR"] = handler{1, cmdDECR, false}
-	handlers["DECRBY"] = handler{2, cmdDECRBY, false}
-	handlers["HGET"] = handler{2, cmdHGET, false}
-	handlers["HSET"] = handler{3, cmdHSET, false}
-	handlers["HSETEX"] = handler{4, cmdHSETEX, false}
-	handlers["HDEL"] = handler{2, cmdHDEL, false}
-	handlers["HMGET"] = handler{2, cmdHMGET, false}
-	handlers["HMSET"] = handler{3, cmdHMSET, false}
-	handlers["HMINCRBYEX"] = handler{2, cmdHMINCRBYEX, false}
-	handlers["HGETALL"] = handler{1, cmdHGETALL, false}
-	handlers["EXPIRE"] = handler{2, cmdEXPIRE, false}
-	handlers["TTL"] = handler{1, cmdTTL, false}
-	handlers["FLUSHDB"] = handler{0, cmdFLUSHDB, false}
+	handlers["DEL"] = handler{1, 1, cmdDEL, false}
+	handlers["GET"] = handler{1, 1, cmdGET, false}
+	handlers["SET"] = handler{2, 1, cmdSET, false}
+	handlers["SETEX"] = handler{3, 2, cmdSETEX, false}
+	handlers["SETNXEX"] = handler{3, 2, cmdSETNXEX, false}
+	handlers["SETNX"] = handler{2, 1, cmdSETNX, false}
+	handlers["MGET"] = handler{2, 2, cmdMGET, false}
+	handlers["MSET"] = handler{2, 2, cmdMSET, false}
+	handlers["LLEN"] = handler{1, 1, cmdLLEN, false}
+	handlers["RPUSH"] = handler{2, 1, cmdRPUSH, false}
+	handlers["LPUSH"] = handler{2, 1, cmdLPUSH, false}
+	handlers["RPUSHEX"] = handler{3, 1, cmdRPUSHEX, false}
+	handlers["LPUSHEX"] = handler{3, 1, cmdLPUSHEX, false}
+	handlers["RPOP"] = handler{1, 1, cmdRPOP, false}
+	handlers["LPOP"] = handler{1, 1, cmdLPOP, false}
+	handlers["LRANGE"] = handler{3, 1, cmdLRANGE, false}
+	handlers["LTRIM"] = handler{3, 3, cmdLTRIM, false}
+	handlers["INCR"] = handler{1, 1, cmdINCR, false}
+	handlers["INCRBY"] = handler{2, 2, cmdINCRBY, false}
+	handlers["HINCRBY"] = handler{3, 3, cmdHINCRBY, false}
+	handlers["HINCRBYEX"] = handler{4, 4, cmdHINCRBYEX, false}
+	handlers["DECR"] = handler{1, 1, cmdDECR, false}
+	handlers["DECRBY"] = handler{2, 2, cmdDECRBY, false}
+	handlers["HGET"] = handler{2, 2, cmdHGET, false}
+	handlers["HSET"] = handler{3, 2, cmdHSET, false}
+	handlers["HSETEX"] = handler{4, 3, cmdHSETEX, false}
+	handlers["HDEL"] = handler{2, 2, cmdHDEL, false}
+	handlers["HMGET"] = handler{2, 2, cmdHMGET, false}
+	handlers["HMSET"] = handler{3, 2, cmdHMSET, false}
+	handlers["HMINCRBYEX"] = handler{2, 2, cmdHMINCRBYEX, false}
+	handlers["HGETALL"] = handler{1, 1, cmdHGETALL, false}
+	handlers["EXPIRE"] = handler{2, 2, cmdEXPIRE, false}
+	handlers["TTL"] = handler{1, 1, cmdTTL, false}
+	handlers["FLUSHDB"] = handler{0, 0, cmdFLUSHDB, false}
 	return handlers
 }
 
 func expandedMapHandlers() map[string]handler {
 	handlers := standardHandlers()
-	handlers["DEL"] = handler{1, cmdExpandedMapDEL, false}
-	handlers["HINCRBY"] = handler{3, cmdExpandedMapHINCRBY, false}
-	handlers["HINCRBYEX"] = handler{4, cmdExpandedMapHINCRBYEX, false}
-	handlers["HGET"] = handler{2, cmdExpandedMapHGET, false}
-	handlers["HSET"] = handler{3, cmdExpandedMapHSET, false}
-	handlers["HSETEX"] = handler{4, cmdExpandedMapHSETEX, false}
-	handlers["HDEL"] = handler{2, cmdExpandedMapHDEL, false}
-	handlers["HMGET"] = handler{2, cmdExpandedMapHMGET, false}
-	handlers["HMSET"] = handler{3, cmdExpandedMapHMSET, false}
-	handlers["HMINCRBYEX"] = handler{2, cmdExpandedMapHMINCRBYEX, false}
-	handlers["HGETALL"] = handler{1, cmdExpandedMapHGETALL, false}
-	handlers["EXPIRE"] = handler{2, cmdExpandedMapEXPIRE, false}
-	handlers["TTL"] = handler{1, cmdExpandedMapTTL, false}
+	handlers["DEL"] = handler{1, 1, cmdExpandedMapDEL, false}
+	handlers["HINCRBY"] = handler{3, 3, cmdExpandedMapHINCRBY, false}
+	handlers["HINCRBYEX"] = handler{4, 4, cmdExpandedMapHINCRBYEX, false}
+	handlers["HGET"] = handler{2, 2, cmdExpandedMapHGET, false}
+	handlers["HSET"] = handler{3, 2, cmdExpandedMapHSET, false}
+	handlers["HSETEX"] = handler{4, 3, cmdExpandedMapHSETEX, false}
+	handlers["HDEL"] = handler{2, 2, cmdExpandedMapHDEL, false}
+	handlers["HMGET"] = handler{2, 2, cmdExpandedMapHMGET, false}
+	handlers["HMSET"] = handler{3, 2, cmdExpandedMapHMSET, false}
+	handlers["HMINCRBYEX"] = handler{2, 2, cmdExpandedMapHMINCRBYEX, false}
+	handlers["HGETALL"] = handler{1, 1, cmdExpandedMapHGETALL, false}
+	handlers["EXPIRE"] = handler{2, 2, cmdExpandedMapEXPIRE, false}
+	handlers["TTL"] = handler{1, 1, cmdExpandedMapTTL, false}
 	return handlers
 }
 
@@ -222,13 +222,16 @@ func main() {
 			backwardWriteCompat = true
 			log.Printf("%s: Write backward compat", set)
 		}
-		ctx := context{client, *exitOnClusterLost, *ns, set, readPolicy, writePolicy, backwardWriteCompat, 0, 0, 0, 0, 0, nil, 0}
+		ctx := context{client, *exitOnClusterLost, *ns, set, readPolicy, writePolicy, backwardWriteCompat, 0, 0, 0, 0, 0, nil, 0, false}
 
 		if statsdConfig != nil {
 			log.Printf("%s: Sending stats to statsd %s", set, statsdConfig)
 			go statsd(statsdConfig.(string), &ctx)
 		}
 
+		if m["log_commands"] != nil {
+			ctx.logCommands = true
+		}
 		if m["expanded_map"] != nil {
 			if m["default_ttl"] != nil {
 				ctx.expandedMapDefaultTTL = getIntFromJson(m["default_ttl"])
@@ -360,6 +363,13 @@ func handleCommand(wf io.Writer, args [][]byte, handlers map[string]handler, ctx
 		args = args[1:]
 		h, ok := handlers[cmd]
 		if ok {
+			if ctx.logCommands {
+				end := ""
+				for i := 0; i < h.argsLogCount; i ++ {
+					end += fmt.Sprintf(" %v", string(args[i]))
+				}
+				log.Printf("[ %s ] Command: %s:%s", ctx.set, cmd, end)
+			}
 			if h.argsCount > len(args) {
 				return fmt.Errorf("Wrong number of params for '%s': %d", cmd, len(args))
 			}

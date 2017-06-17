@@ -8,9 +8,10 @@ import (
 )
 
 type handler struct {
-	argsCount int
-	f         func(io.Writer, *context, [][]byte) error
-	writeBack bool
+	argsCount    int
+	argsLogCount int
+	f            func(io.Writer, *context, [][]byte) error
+	writeBack    bool
 }
 
 type context struct {
@@ -28,4 +29,5 @@ type context struct {
 	expandedMapDefaultTTL int
 	expandedMapCache      *freecache.Cache
 	expandedMapCacheTTL   int
+	logCommands					  bool
 }
