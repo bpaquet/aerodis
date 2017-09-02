@@ -555,6 +555,40 @@ if (!isset($_ENV['USE_REAL_REDIS'])) {
   compare($r->lSize('myKey'), 0);
 }
 
+echo("IncrByEx / DecrByEx\n");
+
+$r->del('myKey');
+compare($r->incrByEx('myKey', 4, 2), 2);
+compare($r->get('myKey'), '2');
+upper($r->ttl('myKey'), 1);
+sleep(1);
+compare($r->get('myKey'), '2');
+upper($r->ttl('myKey'), 1);
+sleep(5);
+compare($r->get('myKey'), false);
+
+compare($r->incrByEx('myKey', 4, 2), 2);
+compare($r->get('myKey'), '2');
+upper($r->ttl('myKey'), 1);
+compare($r->incrBy('myKey', 4), 6);
+compare($r->get('myKey'), '6');
+sleep(1);
+compare($r->get('myKey'), '6');
+upper($r->ttl('myKey'), 1);
+sleep(5);
+compare($r->get('myKey'), false);
+
+compare($r->decrByEx('myKey', 4, 2), -2);
+compare($r->get('myKey'), '-2');
+upper($r->ttl('myKey'), 1);
+compare($r->incrBy('myKey', 4), 2);
+compare($r->get('myKey'), '2');
+sleep(1);
+compare($r->get('myKey'), '2');
+upper($r->ttl('myKey'), 1);
+sleep(5);
+compare($r->get('myKey'), false);
+
 echo("SetEx\n");
 
 $r->del('not_existing key');

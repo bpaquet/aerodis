@@ -48,10 +48,12 @@ func standardHandlers() map[string]handler {
 	handlers["LTRIM"] = handler{3, 3, cmdLTRIM, false}
 	handlers["INCR"] = handler{1, 1, cmdINCR, false}
 	handlers["INCRBY"] = handler{2, 2, cmdINCRBY, false}
+	handlers["INCRBYEX"] = handler{3, 3, cmdINCRBYEX, false}
 	handlers["HINCRBY"] = handler{3, 3, cmdHINCRBY, false}
 	handlers["HINCRBYEX"] = handler{4, 4, cmdHINCRBYEX, false}
 	handlers["DECR"] = handler{1, 1, cmdDECR, false}
 	handlers["DECRBY"] = handler{2, 2, cmdDECRBY, false}
+	handlers["DECRBYEX"] = handler{3, 3, cmdDECRBYEX, false}
 	handlers["HGET"] = handler{2, 2, cmdHGET, false}
 	handlers["HSET"] = handler{3, 2, cmdHSET, false}
 	handlers["HSETEX"] = handler{4, 3, cmdHSETEX, false}

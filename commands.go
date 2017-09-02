@@ -327,6 +327,18 @@ func cmdINCRBY(wf io.Writer, ctx *context, args [][]byte) error {
 	return hIncrByEx(wf, ctx, args[0], binName, incr, -1)
 }
 
+func cmdINCRBYEX(wf io.Writer, ctx *context, args [][]byte) error {
+	ttl, err := strconv.Atoi(string(args[1]))
+	if err != nil {
+		return err
+	}
+	incr, err := strconv.Atoi(string(args[2]))
+	if err != nil {
+		return err
+	}
+	return hIncrByEx(wf, ctx, args[0], binName, incr, ttl)
+}
+
 func cmdHINCRBY(wf io.Writer, ctx *context, args [][]byte) error {
 	incr, err := strconv.Atoi(string(args[2]))
 	if err != nil {
@@ -353,6 +365,18 @@ func cmdDECRBY(wf io.Writer, ctx *context, args [][]byte) error {
 		return err
 	}
 	return hIncrByEx(wf, ctx, args[0], binName, -decr, -1)
+}
+
+func cmdDECRBYEX(wf io.Writer, ctx *context, args [][]byte) error {
+	ttl, err := strconv.Atoi(string(args[1]))
+	if err != nil {
+		return err
+	}
+	decr, err := strconv.Atoi(string(args[2]))
+	if err != nil {
+		return err
+	}
+	return hIncrByEx(wf, ctx, args[0], binName, -decr, ttl)
 }
 
 func cmdHMGET(wf io.Writer, ctx *context, args [][]byte) error {
