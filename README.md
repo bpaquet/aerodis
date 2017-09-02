@@ -39,13 +39,7 @@ Multi-database: Aerodis does not manage multi database on one socket, but can ma
 * array: ``lpush`` / ``rpush`` / ``rpop`` / ``lpop`` / ``llen`` / ``ltrim`` / ``lRange``
 * flush: ``flushdb`` (using scan, poor performance)
 * map: ``hget`` / ``hset`` / ``hmget`` / ``hmset`` / ``hincrby``/ ``hdel``/ ``hgetall`` (see below)
-<<<<<<< HEAD
-* transaction: ``exec``/ ``multi``. Supported for compatibility, but commands are executed between ``exec``/``multi``.
-Answers are send when calling ``multi``, like with Redis.
-=======
-* transaction: ``exec``/ ``multi``. Supported for compatibility, but command are executed even between ``exec``/``multi``.
-Answers are dispatched when calling ``multi``, like with Redis.
->>>>>>> origin/master
+* transaction: ``exec``/ ``multi``. Supported for compatibility, but command are executed even between ``exec``/``multi``. Responses are dispatched when calling ``multi``, like with Redis.
 
 ## Added functions:
 
