@@ -151,6 +151,10 @@ compare($r->decr('myKey'), 2);
 compare($r->get('myKey'), "2");
 compare($r->decrby('myKey', 5), -3);
 compare($r->get('myKey'), "-3");
+compare($r->incrby('myKey', -2), -5);
+compare($r->get('myKey'), "-5");
+compare($r->decrby('myKey', -2), -3);
+compare($r->get('myKey'), "-3");
 
 $r->delete('myKey');
 compare($r->set('myKey', "a"), true);
