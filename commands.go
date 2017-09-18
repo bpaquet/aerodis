@@ -155,20 +155,24 @@ func cmdHDEL(wf io.Writer, ctx *context, args [][]byte) error {
 	return writeLine(wf, ":"+strconv.Itoa(rec.(int)))
 }
 
-func arrayPush(wf io.Writer, ctx *context, args [][]byte, f string, ttl int) error {
+func listOpReturnSize(wf io.Writer, ctx *context, args [][]byte, ttl int, op *as.Operation) error {
 	key, err := buildKey(ctx, args[0])
 	if err != nil {
 		return err
 	}
-	rec, err := ctx.client.Execute(ctx.writePolicy, key, MODULE_NAME, f, as.NewValue(binName), as.NewValue(encode(ctx, args[1])), as.NewValue(ttl))
+	rec, err := ctx.client.Operate(fillWritePolicyEx(ttl, false), key, op, as.ListSizeOp(binName))
 	if err != nil {
 		return err
 	}
-	return writeLine(wf, ":"+strconv.Itoa(rec.(int)))
+	return writeBinIntListSize(wf, rec, binName)
+}
+
+func arrayRPush(wf io.Writer, ctx *context, args [][]byte, ttl int) error {
+	return listOpReturnSize(wf, ctx, args, ttl, as.ListAppendOp(binName, encode(ctx, args[1])))
 }
 
 func cmdRPUSH(wf io.Writer, ctx *context, args [][]byte) error {
-	return arrayPush(wf, ctx, args, "RPUSH", -1)
+	return arrayRPush(wf, ctx, args, -1)
 }
 
 func cmdRPUSHEX(wf io.Writer, ctx *context, args [][]byte) error {
@@ -177,11 +181,15 @@ func cmdRPUSHEX(wf io.Writer, ctx *context, args [][]byte) error {
 		return err
 	}
 
-	return arrayPush(wf, ctx, args, "RPUSH", ttl)
+	return arrayRPush(wf, ctx, args, ttl)
+}
+
+func arrayLPush(wf io.Writer, ctx *context, args [][]byte, ttl int) error {
+	return listOpReturnSize(wf, ctx, args, ttl, as.ListInsertOp(binName, 0, encode(ctx, args[1])))
 }
 
 func cmdLPUSH(wf io.Writer, ctx *context, args [][]byte) error {
-	return arrayPush(wf, ctx, args, "LPUSH", -1)
+	return arrayLPush(wf, ctx, args, -1)
 }
 
 func cmdLPUSHEX(wf io.Writer, ctx *context, args [][]byte) error {
@@ -190,7 +198,7 @@ func cmdLPUSHEX(wf io.Writer, ctx *context, args [][]byte) error {
 		return err
 	}
 
-	return arrayPush(wf, ctx, args, "LPUSH", ttl)
+	return arrayLPush(wf, ctx, args, ttl)
 }
 
 func arrayPop(wf io.Writer, ctx *context, args [][]byte, f string) error {
@@ -243,11 +251,11 @@ func cmdLLEN(wf io.Writer, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-	rec, err := ctx.client.Get(ctx.readPolicy, key, binName+"_size")
+	rec, err := ctx.client.Operate(ctx.writePolicy, key, as.ListSizeOp(binName))
 	if err != nil {
 		return err
 	}
-	return writeBinInt(wf, rec, binName+"_size")
+	return writeBinInt(wf, rec, binName)
 }
 
 func cmdLRANGE(wf io.Writer, ctx *context, args [][]byte) error {

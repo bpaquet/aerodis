@@ -42,22 +42,6 @@ function LPOP(rec, bin, count, ttl)
 	return nil
 end
 
-function LPUSH(rec, bin, value, ttl)
-  local l = rec[bin]
-  if (l == nil) then
-    l = list()
-  end
-  list.prepend(l, value)
-  rec[bin] = l
-  local length = #l
-  rec[bin .. '_size']= length
-	if (ttl ~= -1) then
-		record.set_ttl(rec, ttl)
-	end
-  UPDATE(rec)
-  return length
-end
-
 local function ARRAY_RANGE (rec, bin, start, stop)
 	if (EXISTS(rec, bin)) then
 		local l = rec[bin]
@@ -142,22 +126,6 @@ function RPOP (rec, bin, count, ttl)
 		end
 	end
 	return nil
-end
-
-function RPUSH (rec, bin, value, ttl)
-	local l = rec[bin]
-	if (l == nil) then
-		l = list()
-	end
-	list.append(l, value)
-	rec[bin] = l
-	local length = #l
-	rec[bin .. '_size']= length
-	if (ttl ~= -1) then
-		record.set_ttl(rec, ttl)
-	end
-	UPDATE(rec)
-	return length
 end
 
 function HSET (rec, bin, value)
