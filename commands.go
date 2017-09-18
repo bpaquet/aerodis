@@ -411,15 +411,16 @@ func cmdHMSET(wf io.Writer, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-	m := make(map[string]interface{})
-	for i := 1; i+1 < len(args); i += 2 {
-		m[string(args[i])] = encode(ctx, args[i+1])
+	bins := make([]*as.Bin, 0)
+	a := args[1:]
+	for i := 0; i+1 < len(a); i += 2 {
+		bins = append(bins, as.NewBin(string(a[i]), encode(ctx, a[i+1])))
 	}
-	rec, err := ctx.client.Execute(ctx.writePolicy, key, MODULE_NAME, "HMSET", as.NewValue(m))
+	err = ctx.client.PutBins(ctx.writePolicy, key, bins...)
 	if err != nil {
 		return err
 	}
-	return writeLine(wf, "+"+rec.(string))
+	return writeLine(wf, "+OK")
 }
 
 func cmdHGETALL(wf io.Writer, ctx *context, args [][]byte) error {

@@ -178,11 +178,3 @@ function HDEL (rec, bin)
 	end
 	return 0
 end
-
-function HMSET (rec, field_value_map)
-	for k,v in map.iterator(field_value_map) do
-		rec[k] = v
-	end
-	UPDATE(rec)
-	return "OK"
-end
