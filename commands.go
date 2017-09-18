@@ -123,6 +123,7 @@ func hset(wf io.Writer, ctx *context, k []byte, kk []byte, v []byte, ttl int) er
 	if err != nil {
 		return err
 	}
+	// With operate, we can detect the creation of a new record with Generation, but not a new field
 	rec, err := ctx.client.Execute(fillWritePolicyEx(ttl, false), key, MODULE_NAME, "HSET", as.NewValue(string(kk)), as.NewValue(encode(ctx, v)))
 	if err != nil {
 		return err
@@ -426,23 +427,29 @@ func cmdHGETALL(wf io.Writer, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-	rec, err := ctx.client.Execute(ctx.writePolicy, key, MODULE_NAME, "HGETALL")
+	rec, err := ctx.client.Get(ctx.readPolicy, key)
 	if err != nil {
 		return err
 	}
-	a := rec.([]interface{})
-	err = writeLine(wf, "*"+strconv.Itoa(len(a)))
-	if err != nil {
-		return err
-	}
-	for i := 0; i+1 < len(a); i += 2 {
-		err = writeByteArray(wf, []byte(a[i].(string)))
+	if rec == nil {
+		err = writeLine(wf, "*0")
 		if err != nil {
 			return err
 		}
-		err = writeValue(wf, a[i+1])
+	} else {
+		err = writeLine(wf, "*"+strconv.Itoa(len(rec.Bins) * 2))
 		if err != nil {
 			return err
+		}
+		for k, v := range rec.Bins {
+			err = writeByteArray(wf, []byte(k))
+			if err != nil {
+				return err
+			}
+			err = writeValue(wf, v)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil

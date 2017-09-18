@@ -179,18 +179,6 @@ function HDEL (rec, bin)
 	return 0
 end
 
-function HGETALL (rec)
-	local l = list()
-	if record.ttl(rec) < (MAX_INT - 60) then
-		local names = record.bin_names(rec)
-		for k, name in ipairs(names) do
-			list.append(l, name);
-			list.append(l, rec[name]);
-		end
-	end
-	return l
-end
-
 function HMSET (rec, field_value_map)
 	for k,v in map.iterator(field_value_map) do
 		rec[k] = v
