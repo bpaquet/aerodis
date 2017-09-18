@@ -411,10 +411,9 @@ func cmdHMSET(wf io.Writer, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-	bins := make([]*as.Bin, 0)
-	a := args[1:]
-	for i := 0; i+1 < len(a); i += 2 {
-		bins = append(bins, as.NewBin(string(a[i]), encode(ctx, a[i+1])))
+	bins := make([]*as.Bin, (len(args) - 1) / 2)
+	for i := 1; i+1 < len(args); i += 2 {
+		bins[i/2] = as.NewBin(string(args[i]), encode(ctx, args[i+1]))
 	}
 	err = ctx.client.PutBins(ctx.writePolicy, key, bins...)
 	if err != nil {
@@ -526,14 +525,13 @@ func cmdHMINCRBYEX(wf io.Writer, ctx *context, args [][]byte) error {
 		}
 		return writeLine(wf, "+OK")
 	}
-	ops := make([]*as.Operation, 0)
-	a := args[2:]
-	for i := 0; i+1 < len(a); i += 2 {
-		incr, err := strconv.Atoi(string(a[i+1]))
+	ops := make([]*as.Operation, (len(args) - 2) / 2)
+	for i := 2; i+1 < len(args); i += 2 {
+		incr, err := strconv.Atoi(string(args[i+1]))
 		if err != nil {
 			return err
 		}
-		ops = append(ops, as.AddOp(as.NewBin(string(a[i]), incr)))
+		ops[(i/2)-1] = as.AddOp(as.NewBin(string(args[i]), incr))
 	}
 	_, err = ctx.client.Operate(fillWritePolicyEx(ttl, false), key, ops...)
 	if err != nil {
