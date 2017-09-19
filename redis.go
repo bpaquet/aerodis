@@ -219,12 +219,7 @@ func main() {
 
 		log.Printf("%s: Listening on %s", set, listen)
 
-		backwardWriteCompat := false
-		if m["backwardWriteCompat"] != nil {
-			backwardWriteCompat = true
-			log.Printf("%s: Write backward compat", set)
-		}
-		ctx := context{client, *exitOnClusterLost, *ns, set, readPolicy, writePolicy, backwardWriteCompat, 0, 0, 0, 0, 0, nil, 0, false}
+		ctx := context{client, *exitOnClusterLost, *ns, set, readPolicy, writePolicy, 0, 0, 0, 0, 0, nil, 0, false}
 
 		if statsdConfig != nil {
 			log.Printf("%s: Sending stats to statsd %s", set, statsdConfig)

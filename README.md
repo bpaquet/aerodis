@@ -137,7 +137,6 @@ time synchronized if you hqve TTL issues.
 
 * Statsd statistics
 * Write back
-* Backward compatibility
 
 ## License
 

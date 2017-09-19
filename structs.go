@@ -21,7 +21,6 @@ type context struct {
 	set                   string
 	readPolicy            *as.BasePolicy
 	writePolicy           *as.WritePolicy
-	backwardWriteCompat   bool
 	counterWbOk           uint32
 	counterOk             uint32
 	counterErr            uint32

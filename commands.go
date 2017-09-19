@@ -1,10 +1,8 @@
 package main
 
 import (
-	"encoding/base64"
 	"io"
 	"strconv"
-	"strings"
 
 	as "github.com/aerospike/aerospike-client-go"
 	ase "github.com/aerospike/aerospike-client-go/types"
@@ -218,21 +216,9 @@ func arrayPop(wf io.Writer, ctx *context, args [][]byte, f string) error {
 		return writeLine(wf, "$-1")
 	}
 	x := rec.([]interface{})[0]
-	// backward compat
 	switch x.(type) {
 	case int:
 		return writeByteArray(wf, []byte(strconv.Itoa(x.(int))))
-	case string:
-		s := x.(string)
-		if strings.HasPrefix(s, "__64__") {
-			bytes, err := base64.StdEncoding.DecodeString(s[6:])
-			if err != nil {
-				return err
-			}
-			return writeByteArray(wf, bytes)
-		}
-		return writeByteArray(wf, []byte(s))
-	// end of backward compat
 	default:
 		return writeByteArray(wf, x.([]byte))
 	}
