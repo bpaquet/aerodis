@@ -158,11 +158,11 @@ func listOpReturnSize(wf io.Writer, ctx *context, args [][]byte, ttl int, op *as
 	if err != nil {
 		return err
 	}
-	rec, err := ctx.client.Operate(fillWritePolicyEx(ttl, false), key, op, as.ListSizeOp(binName))
+	rec, err := ctx.client.Operate(fillWritePolicyEx(ttl, false), key, op)
 	if err != nil {
 		return err
 	}
-	return writeBinIntListSize(wf, rec, binName)
+	return writeBinInt(wf, rec, binName)
 }
 
 func arrayRPush(wf io.Writer, ctx *context, args [][]byte, ttl int) error {

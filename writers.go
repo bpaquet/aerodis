@@ -104,18 +104,6 @@ func writeBinInt(wf io.Writer, rec *as.Record, binName string) error {
 	return writeLine(wf, ":"+strconv.Itoa(x.(int)))
 }
 
-func writeBinIntListSize(wf io.Writer, rec *as.Record, binName string) error {
-	nilValue := ":0"
-	if rec == nil {
-		return writeLine(wf, nilValue)
-	}
-	x := rec.Bins[binName]
-	if x == nil {
-		return writeLine(wf, nilValue)
-	}
-	return writeLine(wf, ":"+strconv.Itoa(x.([]interface{})[0].(int)))
-}
-
 func writeArrayBin(wf io.Writer, res []*as.Record, binName string, keyBinName string) error {
 	l := len(res)
 	if keyBinName != "" {
