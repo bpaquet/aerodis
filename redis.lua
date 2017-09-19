@@ -22,26 +22,6 @@ function FLUSHDB(rec)
 	aerospike:remove(rec)
 end
 
-function LPOP(rec, bin, count, ttl)
-	if (EXISTS(rec, bin)) then
-		local l = rec[bin]
-		local new_l = list.drop(l, count)
-		rec[bin] = new_l
-		local length = #new_l
-		if (length == 0) then
-			rec[bin .. '_size'] = nil
-		else
-			rec[bin .. '_size'] = length
-		end
-		if (ttl ~= -1) then
-			record.set_ttl(rec, ttl)
-		end
-		UPDATE(rec)
-		return list.take(l, count)
-	end
-	return nil
-end
-
 local function ARRAY_RANGE (rec, bin, start, stop)
 	if (EXISTS(rec, bin)) then
 		local l = rec[bin]
@@ -99,33 +79,6 @@ function LTRIM (rec, bin, start, stop)
 		UPDATE(rec)
 	end
 	return "OK"
-end
-
-function RPOP (rec, bin, count, ttl)
-	if (EXISTS(rec, bin)) then
-		local l = rec[bin]
- 		local result_list = nil
-		if (#l <= count) then
-			result_list = rec[bin]
-			rec[bin .. '_size']= nil
-			rec[bin] = nil
-		else
-      local start = #l - count
-			result_list = list.drop(l, start)
-			rec[bin] = list.take(l, start)
-			rec[bin .. '_size']= #rec[bin]
-		end
-		if (ttl ~= -1) then
-			record.set_ttl(rec, ttl)
-		end
-		UPDATE(rec)
-		if (result_list ~= nil) then
-			return result_list
-		else
-			return list()
-		end
-	end
-	return nil
 end
 
 function HSET (rec, bin, value)

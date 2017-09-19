@@ -166,6 +166,8 @@ func listOpReturnSize(wf io.Writer, ctx *context, args [][]byte, ttl int, op *as
 }
 
 func arrayRPush(wf io.Writer, ctx *context, args [][]byte, ttl int) error {
+	// ListInsertOp does not like to be called on an empty list and -1
+	// ListAppendOp is ok
 	return listOpReturnSize(wf, ctx, args, ttl, as.ListAppendOp(binName, encode(ctx, args[1])))
 }
 
@@ -178,7 +180,6 @@ func cmdRPUSHEX(wf io.Writer, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-
 	return arrayRPush(wf, ctx, args, ttl)
 }
 
@@ -195,41 +196,37 @@ func cmdLPUSHEX(wf io.Writer, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-
 	return arrayLPush(wf, ctx, args, ttl)
 }
 
-func arrayPop(wf io.Writer, ctx *context, args [][]byte, f string) error {
+func arrayPop(wf io.Writer, ctx *context, args [][]byte, index int) error {
 	key, err := buildKey(ctx, args[0])
 	if err != nil {
 		return err
 	}
-	rec, err := ctx.client.Execute(ctx.writePolicy, key, MODULE_NAME, f, as.NewValue(binName), as.NewValue(1), as.NewValue(-1))
+	rec, err := ctx.client.Operate(ctx.writePolicy, key, as.ListPopOp(binName, index))
+	code := errResultCode(err)
+	if code == ase.BIN_TYPE_ERROR || code == ase.PARAMETER_ERROR {
+		return writeLine(wf, "$-1")
+	}
 	if err != nil {
 		return err
 	}
-	if rec == nil {
-		return writeLine(wf, "$-1")
-	}
-	a := rec.([]interface{})
-	if len(a) == 0 {
-		return writeLine(wf, "$-1")
-	}
-	x := rec.([]interface{})[0]
-	switch x.(type) {
+	result := rec.Bins[binName]
+	switch result.(type) {
 	case int:
-		return writeByteArray(wf, []byte(strconv.Itoa(x.(int))))
+		return writeByteArray(wf, []byte(strconv.Itoa(result.(int))))
 	default:
-		return writeByteArray(wf, x.([]byte))
+		return writeByteArray(wf, result.([]byte))
 	}
 }
 
 func cmdRPOP(wf io.Writer, ctx *context, args [][]byte) error {
-	return arrayPop(wf, ctx, args, "RPOP")
+	return arrayPop(wf, ctx, args, -1)
 }
 
 func cmdLPOP(wf io.Writer, ctx *context, args [][]byte) error {
-	return arrayPop(wf, ctx, args, "LPOP")
+	return arrayPop(wf, ctx, args, 0)
 }
 
 func cmdLLEN(wf io.Writer, ctx *context, args [][]byte) error {

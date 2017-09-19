@@ -34,6 +34,11 @@ func writeByteArray(wf io.Writer, buf []byte) error {
 }
 
 func writeArray(wf io.Writer, array []interface{}) error {
+	if len(array) == 1 {
+		if array[0] == nil {
+			return writeLine(wf, "*0")
+		}
+	}
 	err := writeLine(wf, "*"+strconv.Itoa(len(array)))
 	if err != nil {
 		return err
