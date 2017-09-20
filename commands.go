@@ -254,14 +254,38 @@ func cmdLRANGE(wf io.Writer, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-	rec, err := ctx.client.Execute(ctx.writePolicy, key, MODULE_NAME, "LRANGE", as.NewValue(binName), as.NewValue(start), as.NewValue(stop))
+	if ((stop > 0 && start > 0) || (stop < 0 && start < 0)) && start > stop {
+		return writeLine(wf, "*0")
+	}
+	count := stop - start + 1
+	if stop < start {
+		count -= 1
+	}
+	rec, err := ctx.client.Operate(ctx.writePolicy, key, as.ListGetRangeOp(binName, start, count), as.ListSizeOp(binName))
+	if errResultCode(err) == ase.PARAMETER_ERROR {
+		return writeLine(wf, "*0")
+	}
 	if err != nil {
 		return err
 	}
 	if rec == nil {
-		return writeLine(wf, "$-1")
+		return writeLine(wf, "*0")
 	}
-	return writeArray(wf, rec.([]interface{}))
+	a := rec.Bins[binName].([]interface {})
+	size, result := a[len(a)-1], a[:len(a)-1]
+	if start < 0 && stop >= 0 {
+		end := size.(int) + start + 1
+		if end < len(result) {
+			result = result[0:end]
+		}
+	}
+	if start >= 0 && stop < 0 {
+		end := size.(int) + stop + 1
+		if end < len(result) {
+			result = result[0:end]
+		}
+	}
+	return writeArray(wf, result)
 }
 
 func cmdLTRIM(wf io.Writer, ctx *context, args [][]byte) error {
