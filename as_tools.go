@@ -14,6 +14,14 @@ func fillWritePolicy(writePolicy *as.WritePolicy) {
 	writePolicy.CommitLevel = as.COMMIT_MASTER
 }
 
+func fillWritePolicyGeneration(generation uint32) *as.WritePolicy {
+	policy := as.NewWritePolicy(0, as.TTLDontUpdate)
+	fillWritePolicy(policy)
+	policy.GenerationPolicy = as.EXPECT_GEN_EQUAL
+	policy.Generation = generation
+	return policy
+}
+
 func fillWritePolicyEx(ttl int, createOnly bool) *as.WritePolicy {
 	policy := as.NewWritePolicy(0, as.TTLDontUpdate)
 	if ttl != -1 {

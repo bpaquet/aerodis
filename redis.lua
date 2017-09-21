@@ -22,20 +22,6 @@ function FLUSHDB(rec)
 	aerospike:remove(rec)
 end
 
-function LTRIM (rec, bin, start, stop)
-	if (EXISTS(rec, bin)) then
-		rec[bin] = ARRAY_RANGE(rec, bin, start, stop)
-		local length = #rec[bin]
-		if (length == 0) then
-			rec[bin .. '_size'] = nil
-		else
-			rec[bin .. '_size'] = length
-		end
-		UPDATE(rec)
-	end
-	return "OK"
-end
-
 function HSET (rec, bin, value)
 	local created = 1
 	if (EXISTS(rec, bin)) then

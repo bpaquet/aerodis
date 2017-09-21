@@ -292,6 +292,14 @@ compare($r->ltrim('myKey', 2, 4), true);
 compare($r->lsize('myKey'), 0);
 compare($r->lRange('myKey', 0, 0), array());
 
+$r->del('myKey');
+$r->set('myKey', 'a');
+compare($r->lRange('myKey', 0, 0), false);
+compare($r->lsize('myKey'), false);
+compare($r->rpush('myKey', 'a'), false);
+compare($r->lpush('myKey', 'a'), false);
+compare($r->ltrim('myKey', 2, 4), false);
+
 echo("mGet mSet\n");
 $r->del('myKey1');
 $r->del('myKey2');

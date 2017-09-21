@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"io"
 	"strconv"
 
@@ -254,8 +255,16 @@ func cmdLRANGE(wf io.Writer, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
+	err, result, _ := arrayRange(ctx, key, start, stop)
+	if err != nil {
+		return err
+	}
+	return writeArray(wf, result)
+}
+
+func arrayRange(ctx *context, key *as.Key, start int, stop int) (error, []interface{}, uint32) {
 	if ((stop > 0 && start > 0) || (stop < 0 && start < 0)) && start > stop {
-		return writeLine(wf, "*0")
+		return nil, make([]interface{}, 0), 0
 	}
 	count := stop - start + 1
 	if stop < start {
@@ -263,13 +272,13 @@ func cmdLRANGE(wf io.Writer, ctx *context, args [][]byte) error {
 	}
 	rec, err := ctx.client.Operate(ctx.writePolicy, key, as.ListGetRangeOp(binName, start, count), as.ListSizeOp(binName))
 	if errResultCode(err) == ase.PARAMETER_ERROR {
-		return writeLine(wf, "*0")
+		return nil, make([]interface{}, 0), 0
 	}
 	if err != nil {
-		return err
+		return err, nil, 0
 	}
 	if rec == nil {
-		return writeLine(wf, "*0")
+		return nil, make([]interface{}, 0), 0
 	}
 	a := rec.Bins[binName].([]interface {})
 	size, result := a[len(a)-1], a[:len(a)-1]
@@ -285,7 +294,7 @@ func cmdLRANGE(wf io.Writer, ctx *context, args [][]byte) error {
 			result = result[0:end]
 		}
 	}
-	return writeArray(wf, result)
+	return nil, result, rec.Generation
 }
 
 func cmdLTRIM(wf io.Writer, ctx *context, args [][]byte) error {
@@ -301,14 +310,37 @@ func cmdLTRIM(wf io.Writer, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-	rec, err := ctx.client.Execute(ctx.writePolicy, key, MODULE_NAME, "LTRIM", as.NewValue(binName), as.NewValue(start), as.NewValue(stop))
+	for i := 0; i < 10; i++ {
+		err := tryLTRIM(wf, ctx, key, start, stop)
+		if err == nil {
+			return writeLine(wf, "+OK")
+		}
+		if errResultCode(err) != ase.GENERATION_ERROR {
+			return err
+		}
+	}
+	return errors.New("Too many retry for ltrim")
+}
+
+func tryLTRIM(wf io.Writer, ctx *context, key *as.Key, start int, stop int) error {
+	err, result, generation := arrayRange(ctx, key, start, stop)
 	if err != nil {
 		return err
 	}
-	if rec == nil {
-		return writeLine(wf, "$-1")
+	ops := make([]*as.Operation, 1)
+	ops[0] = as.ListClearOp(binName)
+	if len(result) > 0 {
+		ops = append(ops, as.ListAppendOp(binName, result...))
 	}
-	return writeLine(wf, "+OK")
+	policy := ctx.writePolicy
+	if generation > 0 {
+		policy = fillWritePolicyGeneration(generation)
+	}
+	_, err = ctx.client.Operate(policy, key, ops...)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func hIncrByEx(wf io.Writer, ctx *context, k []byte, field string, incr int, ttl int) error {
