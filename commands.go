@@ -117,21 +117,58 @@ func cmdSETNXEX(wf io.Writer, ctx *context, args [][]byte) error {
 	return setex(wf, ctx, args[0], binName, args[2], ttl, true)
 }
 
-func hset(wf io.Writer, ctx *context, k []byte, kk []byte, v []byte, ttl int) error {
+func tryHSet(ctx *context, key *as.Key, field string, value interface{}, ttl int) (error, bool) {
+	policy := as.NewPolicy()
+	policy.ReplicaPolicy = as.MASTER
+	rec, err := ctx.client.Get(policy, key, field)
+	if err != nil {
+		return err, false
+	}
+	var generation uint32
+	if rec != nil {
+		generation = rec.Generation
+	} else {
+		generation = 0
+	}
+	err = ctx.client.PutBins(fillWritePolicyGeneration(generation, ttl), key, as.NewBin(field, value))
+	if err != nil {
+		return err, false
+	}
+	if rec == nil {
+		return nil, false
+	}
+	if rec.Bins[field] == nil {
+		return nil, false
+	}
+	return nil, true
+}
+
+func hset(wf io.Writer, ctx *context, k []byte, kk []byte, v interface{}, ttl int, set bool) error {
 	key, err := buildKey(ctx, k)
 	if err != nil {
 		return err
 	}
-	// With operate, we can detect the creation of a new record with Generation, but not a new field
-	rec, err := ctx.client.Execute(fillWritePolicyEx(ttl, false), key, MODULE_NAME, "HSET", as.NewValue(string(kk)), as.NewValue(encode(ctx, v)))
-	if err != nil {
-		return err
+	field := string(kk)
+	for i := 0; i < 10; i++ {
+		err, existed := tryHSet(ctx, key, field, v, ttl)
+		if err == nil {
+			if ! set {
+				existed = !existed
+			}
+			if existed {
+				return writeLine(wf, ":0")
+			}
+			return writeLine(wf, ":1")
+		}
+		if errResultCode(err) != ase.GENERATION_ERROR {
+			return err
+		}
 	}
-	return writeLine(wf, ":"+strconv.Itoa(rec.(int)))
-
+	return errors.New("Too many retry for hset")
 }
+
 func cmdHSET(wf io.Writer, ctx *context, args [][]byte) error {
-	return hset(wf, ctx, args[0], args[1], args[2], -1)
+	return hset(wf, ctx, args[0], args[1], args[2], -1, true)
 }
 
 func cmdHSETEX(wf io.Writer, ctx *context, args [][]byte) error {
@@ -139,19 +176,11 @@ func cmdHSETEX(wf io.Writer, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-	return hset(wf, ctx, args[0], args[2], args[3], ttl)
+	return hset(wf, ctx, args[0], args[2], args[3], ttl, true)
 }
 
 func cmdHDEL(wf io.Writer, ctx *context, args [][]byte) error {
-	key, err := buildKey(ctx, args[0])
-	if err != nil {
-		return err
-	}
-	rec, err := ctx.client.Execute(ctx.writePolicy, key, MODULE_NAME, "HDEL", as.NewValue(string(args[1])))
-	if err != nil {
-		return err
-	}
-	return writeLine(wf, ":"+strconv.Itoa(rec.(int)))
+	return hset(wf, ctx, args[0], args[1], nil, -1, false)
 }
 
 func listOpReturnSize(wf io.Writer, ctx *context, args [][]byte, ttl int, op *as.Operation) error {
@@ -334,7 +363,7 @@ func tryLTRIM(wf io.Writer, ctx *context, key *as.Key, start int, stop int) erro
 	}
 	policy := ctx.writePolicy
 	if generation > 0 {
-		policy = fillWritePolicyGeneration(generation)
+		policy = fillWritePolicyGeneration(generation, -1)
 	}
 	_, err = ctx.client.Operate(policy, key, ops...)
 	if err != nil {
