@@ -29,4 +29,5 @@ type context struct {
 	expandedMapCache      *freecache.Cache
 	expandedMapCacheTTL   int
 	logCommands					  bool
+	generationRetries			int
 }

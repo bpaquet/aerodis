@@ -149,7 +149,7 @@ func hset(wf io.Writer, ctx *context, k []byte, kk []byte, v interface{}, ttl in
 		return err
 	}
 	field := string(kk)
-	for i := 0; i < 10; i++ {
+	for i := 0; i < ctx.generationRetries; i++ {
 		err, existed := tryHSet(ctx, key, field, v, ttl)
 		if err == nil {
 			if ! set {
@@ -339,7 +339,7 @@ func cmdLTRIM(wf io.Writer, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-	for i := 0; i < 10; i++ {
+	for i := 0; i < ctx.generationRetries; i++ {
 		err := tryLTRIM(wf, ctx, key, start, stop)
 		if err == nil {
 			return writeLine(wf, "+OK")
