@@ -65,7 +65,7 @@ func setex(wf io.Writer, ctx *context, k []byte, binName string, content []byte,
 	if err != nil {
 		return err
 	}
-	err = ctx.client.PutBins(fillWritePolicyEx(ttl, createOnly), key, as.NewBin(binName, encode(ctx, content)))
+	err = ctx.client.PutBins(createWritePolicyEx(ttl, createOnly), key, as.NewBin(binName, encode(ctx, content)))
 	if err != nil {
 		if createOnly && errResultCode(err) == ase.KEY_EXISTS_ERROR {
 			return writeLine(wf, ":0")
@@ -130,7 +130,7 @@ func tryHSet(ctx *context, key *as.Key, field string, value interface{}, ttl int
 	} else {
 		generation = 0
 	}
-	err = ctx.client.PutBins(fillWritePolicyGeneration(generation, ttl), key, as.NewBin(field, value))
+	err = ctx.client.PutBins(createWritePolicyGeneration(generation, ttl), key, as.NewBin(field, value))
 	if err != nil {
 		return err, false
 	}
@@ -188,7 +188,7 @@ func listOpReturnSize(wf io.Writer, ctx *context, args [][]byte, ttl int, op *as
 	if err != nil {
 		return err
 	}
-	rec, err := ctx.client.Operate(fillWritePolicyEx(ttl, false), key, op)
+	rec, err := ctx.client.Operate(createWritePolicyEx(ttl, false), key, op)
 	if err != nil {
 		return err
 	}
@@ -363,7 +363,7 @@ func tryLTRIM(wf io.Writer, ctx *context, key *as.Key, start int, stop int) erro
 	}
 	policy := ctx.writePolicy
 	if generation > 0 {
-		policy = fillWritePolicyGeneration(generation, -1)
+		policy = createWritePolicyGeneration(generation, -1)
 	}
 	_, err = ctx.client.Operate(policy, key, ops...)
 	if err != nil {
@@ -378,7 +378,7 @@ func hIncrByEx(wf io.Writer, ctx *context, k []byte, field string, incr int, ttl
 		return err
 	}
 	bin := as.NewBin(field, incr)
-	rec, err := ctx.client.Operate(fillWritePolicyEx(ttl, false), key, as.AddOp(bin), as.GetOpForBin(field))
+	rec, err := ctx.client.Operate(createWritePolicyEx(ttl, false), key, as.AddOp(bin), as.GetOpForBin(field))
 	if err != nil {
 		if errResultCode(err) == ase.BIN_TYPE_ERROR {
 			return writeLine(wf, "$-1")
@@ -542,7 +542,7 @@ func cmdEXPIRE(wf io.Writer, ctx *context, args [][]byte) error {
 		return err
 	}
 
-	err = ctx.client.Touch(fillWritePolicyEx(ttl, false), key)
+	err = ctx.client.Touch(createWritePolicyEx(ttl, false), key)
 	if err != nil {
 		if errResultCode(err) == ase.KEY_NOT_FOUND_ERROR {
 			return writeLine(wf, ":0")
@@ -596,7 +596,7 @@ func cmdHMINCRBYEX(wf io.Writer, ctx *context, args [][]byte) error {
 		return err
 	}
 	if len(args) == 2 {
-		err := ctx.client.Touch(fillWritePolicyEx(ttl, false), key)
+		err := ctx.client.Touch(createWritePolicyEx(ttl, false), key)
 		if err != nil {
 			if errResultCode(err) != ase.KEY_NOT_FOUND_ERROR {
 				return err
@@ -612,7 +612,7 @@ func cmdHMINCRBYEX(wf io.Writer, ctx *context, args [][]byte) error {
 		}
 		ops[(i/2)-1] = as.AddOp(as.NewBin(string(args[i]), incr))
 	}
-	_, err = ctx.client.Operate(fillWritePolicyEx(ttl, false), key, ops...)
+	_, err = ctx.client.Operate(createWritePolicyEx(ttl, false), key, ops...)
 	if err != nil {
 		return err
 	}

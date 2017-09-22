@@ -184,7 +184,7 @@ func main() {
 	}
 
 	readPolicy := as.NewPolicy()
-	writePolicy := fillWritePolicyEx(-1, false)
+	writePolicy := createWritePolicyEx(-1, false)
 
 	var wg sync.WaitGroup
 
