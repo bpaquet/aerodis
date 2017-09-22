@@ -540,17 +540,20 @@ func cmdTTL(wf io.Writer, ctx *context, args [][]byte) error {
 }
 
 func cmdFLUSHDB(wf io.Writer, ctx *context, args [][]byte) error {
-	stmt := as.NewStatement(ctx.ns, ctx.set)
-	del, err := ctx.client.ExecuteUDF(nil, stmt, MODULE_NAME, "FLUSHDB")
+	policy := as.NewScanPolicy()
+	recordset, err := ctx.client.ScanAll(policy, ctx.ns, ctx.set)
 	if err != nil {
 		return err
 	}
-
-	err = <- del.OnComplete()
-	if err != nil {
-		return err
+	for res := range recordset.Results() {
+		if res.Err != nil {
+			return err
+		}
+		_, err := ctx.client.Delete(ctx.writePolicy, res.Record.Key)
+		if err != nil {
+			return err
+		}
 	}
-
 	return writeLine(wf, "+OK")
 }
 

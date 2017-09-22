@@ -18,10 +18,6 @@ local function UPDATE(rec)
 	end
 end
 
-function FLUSHDB(rec)
-	aerospike:remove(rec)
-end
-
 function HSET (rec, bin, value)
 	local created = 1
 	if (EXISTS(rec, bin)) then
