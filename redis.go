@@ -169,7 +169,9 @@ func main() {
 	for ! connected {
 		for _, i := range hosts {
 			log.Printf("Connecting to aero on %s:%d", i, aPort)
-			client, err = as.NewClient(i, aPort)
+			policy := as.NewClientPolicy()
+			policy.RequestProleReplicas = true
+			client, err = as.NewClientWithPolicy(policy, i, aPort)
 			if err == nil {
 				log.Printf("Connected to aero on %s:%d, namespace %s", i, aPort, *ns)
 				connected = true
@@ -183,7 +185,7 @@ func main() {
 		}
 	}
 
-	readPolicy := as.NewPolicy()
+	readPolicy := createReadPolicy()
 	writePolicy := fillWritePolicyEx(-1, false)
 
 	var wg sync.WaitGroup
