@@ -234,6 +234,19 @@ func arrayPop(wf io.Writer, ctx *context, args [][]byte, index int) error {
 	if err != nil {
 		return err
 	}
+	size, err := ctx.client.Get(ctx.readPolicy, key, SIZE_ARRAY_FIELD)
+	if err != nil {
+		return err
+	}
+	if size == nil {
+		return writeLine(wf, "$-1")
+	}
+	if size.Bins[SIZE_ARRAY_FIELD] == nil {
+		return writeLine(wf, "$-1")
+	}
+	if size.Bins[SIZE_ARRAY_FIELD].(int) == 0 {
+		return writeLine(wf, "$-1")
+	}
 	rec, err := ctx.client.Operate(ctx.writePolicy, key, as.ListPopOp(binName, index), as.AddOp(as.NewBin(SIZE_ARRAY_FIELD, -1)))
 	code := errResultCode(err)
 	if code == ase.BIN_TYPE_ERROR || code == ase.PARAMETER_ERROR {
