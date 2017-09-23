@@ -188,7 +188,7 @@ func listOpReturnSize(wf io.Writer, ctx *context, args [][]byte, ttl int, op *as
 	if err != nil {
 		return err
 	}
-	rec, err := ctx.client.Operate(createWritePolicyEx(ttl, false), key, op)
+	rec, err := ctx.client.Operate(createWritePolicyEx(ttl, false), key, op, as.AddOp(as.NewBin(SIZE_ARRAY_FIELD, 1)))
 	if err != nil {
 		return err
 	}
@@ -234,7 +234,7 @@ func arrayPop(wf io.Writer, ctx *context, args [][]byte, index int) error {
 	if err != nil {
 		return err
 	}
-	rec, err := ctx.client.Operate(ctx.writePolicy, key, as.ListPopOp(binName, index))
+	rec, err := ctx.client.Operate(ctx.writePolicy, key, as.ListPopOp(binName, index), as.AddOp(as.NewBin(SIZE_ARRAY_FIELD, -1)))
 	code := errResultCode(err)
 	if code == ase.BIN_TYPE_ERROR || code == ase.PARAMETER_ERROR {
 		return writeLine(wf, "$-1")
@@ -264,11 +264,11 @@ func cmdLLEN(wf io.Writer, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-	rec, err := ctx.client.Operate(ctx.writePolicy, key, as.ListSizeOp(binName))
+	rec, err := ctx.client.Get(ctx.readPolicy, key, SIZE_ARRAY_FIELD)
 	if err != nil {
 		return err
 	}
-	return writeBinInt(wf, rec, binName)
+	return writeBinInt(wf, rec, SIZE_ARRAY_FIELD)
 }
 
 func cmdLRANGE(wf io.Writer, ctx *context, args [][]byte) error {
@@ -361,6 +361,7 @@ func tryLTRIM(wf io.Writer, ctx *context, key *as.Key, start int, stop int) erro
 	if len(result) > 0 {
 		ops = append(ops, as.ListAppendOp(binName, result...))
 	}
+	ops = append(ops, as.PutOp(as.NewBin(SIZE_ARRAY_FIELD, len(result))))
 	policy := ctx.writePolicy
 	if generation > 0 {
 		policy = createWritePolicyGeneration(generation, -1)
