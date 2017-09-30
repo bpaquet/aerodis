@@ -120,7 +120,7 @@ func main() {
 	configFile := flag.String("config_file", "", "Configuration file")
 	exitOnClusterLost := flag.Bool("exit_on_cluster_lost", true, "Exit with an error when the connection to the cluster is lost")
 	generationRetries := flag.Int("generation_retries", 10, "Number of retry when error conflict in HSET / HDEL / LTRIM")
-	connectionQueueSize := flag.Int("connection_queue_size", 512, "Max number of connections to each aerospike node")
+	connectionQueueSize := flag.Int("connection_queue_size", 256, "Max number of connections to each aerospike node")
 	flag.Parse()
 
 	config := []byte("{\"sets\":[{\"proto\":\"tcp\",\"listen\":\"127.0.0.1:6379\",\"set\":\"redis\"}]}")
