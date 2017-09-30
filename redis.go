@@ -140,6 +140,11 @@ func main() {
 
 	m := parsedConfig.(map[string]interface{})
 
+	if m["connection_queue_size"] != nil {
+		jsonConnectionQueueSize := getIntFromJson(m["connection_queue_size"])
+		connectionQueueSize = &jsonConnectionQueueSize
+	}
+
 	if m["max_fds"] != nil {
 		maxFds := getIntFromJson(m["max_fds"])
 		var rLimit syscall.Rlimit
