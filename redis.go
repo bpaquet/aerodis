@@ -120,6 +120,7 @@ func main() {
 	configFile := flag.String("config_file", "", "Configuration file")
 	exitOnClusterLost := flag.Bool("exit_on_cluster_lost", true, "Exit with an error when the connection to the cluster is lost")
 	generationRetries := flag.Int("generation_retries", 10, "Number of retry when error conflict in HSET / HDEL / LTRIM")
+	connectionQueueSize := flag.Int("connection_queue_size", 512, "Max number of connections to each aerospike node")
 	flag.Parse()
 
 	config := []byte("{\"sets\":[{\"proto\":\"tcp\",\"listen\":\"127.0.0.1:6379\",\"set\":\"redis\"}]}")
@@ -151,6 +152,8 @@ func main() {
 	  log.Printf("Set max openfile to %d", maxFds)
 	}
 
+	log.Printf("Set connection queue size to %d", *connectionQueueSize)
+
 	jsonAeroHost := m["aerospike_ips"]
 
 	aPort := *aeroPort
@@ -173,6 +176,7 @@ func main() {
 			log.Printf("Connecting to aero on %s:%d", i, aPort)
 			policy := as.NewClientPolicy()
 			policy.RequestProleReplicas = true
+			policy.ConnectionQueueSize = *connectionQueueSize
 			client, err = as.NewClientWithPolicy(policy, i, aPort)
 			if err == nil {
 				log.Printf("Connected to aero on %s:%d, namespace %s", i, aPort, *ns)
