@@ -1,10 +1,9 @@
 package main
 
 import (
-	"encoding/base64"
+	"errors"
 	"io"
 	"strconv"
-	"strings"
 
 	as "github.com/aerospike/aerospike-client-go"
 	ase "github.com/aerospike/aerospike-client-go/types"
@@ -66,7 +65,7 @@ func setex(wf io.Writer, ctx *context, k []byte, binName string, content []byte,
 	if err != nil {
 		return err
 	}
-	err = ctx.client.PutBins(fillWritePolicyEx(ttl, createOnly), key, as.NewBin(binName, encode(ctx, content)))
+	err = ctx.client.PutBins(createWritePolicyEx(ttl, createOnly), key, as.NewBin(binName, encode(ctx, content)))
 	if err != nil {
 		if createOnly && errResultCode(err) == ase.KEY_EXISTS_ERROR {
 			return writeLine(wf, ":0")
@@ -80,7 +79,7 @@ func setex(wf io.Writer, ctx *context, k []byte, binName string, content []byte,
 }
 
 func cmdSET(wf io.Writer, ctx *context, args [][]byte) error {
-	return setex(wf, ctx, args[0], binName, args[1], -1, false)
+	return setex(wf, ctx, args[0], binName, args[1], -2, false)
 }
 
 func cmdSETEX(wf io.Writer, ctx *context, args [][]byte) error {
@@ -118,20 +117,58 @@ func cmdSETNXEX(wf io.Writer, ctx *context, args [][]byte) error {
 	return setex(wf, ctx, args[0], binName, args[2], ttl, true)
 }
 
-func hset(wf io.Writer, ctx *context, k []byte, kk []byte, v []byte, ttl int) error {
+func tryHSet(ctx *context, key *as.Key, field string, value interface{}, ttl int) (error, bool) {
+	policy := as.NewPolicy()
+	policy.ReplicaPolicy = as.MASTER
+	rec, err := ctx.client.Get(policy, key, field)
+	if err != nil {
+		return err, false
+	}
+	var generation uint32
+	if rec != nil {
+		generation = rec.Generation
+	} else {
+		generation = 0
+	}
+	err = ctx.client.PutBins(createWritePolicyGeneration(generation, ttl), key, as.NewBin(field, value))
+	if err != nil {
+		return err, false
+	}
+	if rec == nil {
+		return nil, false
+	}
+	if rec.Bins[field] == nil {
+		return nil, false
+	}
+	return nil, true
+}
+
+func hset(wf io.Writer, ctx *context, k []byte, kk []byte, v interface{}, ttl int, set bool) error {
 	key, err := buildKey(ctx, k)
 	if err != nil {
 		return err
 	}
-	rec, err := ctx.client.Execute(fillWritePolicyEx(ttl, false), key, MODULE_NAME, "HSET", as.NewValue(string(kk)), as.NewValue(encode(ctx, v)))
-	if err != nil {
-		return err
+	field := string(kk)
+	for i := 0; i < ctx.generationRetries; i++ {
+		err, existed := tryHSet(ctx, key, field, v, ttl)
+		if err == nil {
+			if ! set {
+				existed = !existed
+			}
+			if existed {
+				return writeLine(wf, ":0")
+			}
+			return writeLine(wf, ":1")
+		}
+		if errResultCode(err) != ase.GENERATION_ERROR {
+			return err
+		}
 	}
-	return writeLine(wf, ":"+strconv.Itoa(rec.(int)))
-
+	return errors.New("Too many retry for hset")
 }
+
 func cmdHSET(wf io.Writer, ctx *context, args [][]byte) error {
-	return hset(wf, ctx, args[0], args[1], args[2], -1)
+	return hset(wf, ctx, args[0], args[1], args[2], -1, true)
 }
 
 func cmdHSETEX(wf io.Writer, ctx *context, args [][]byte) error {
@@ -139,35 +176,33 @@ func cmdHSETEX(wf io.Writer, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-	return hset(wf, ctx, args[0], args[2], args[3], ttl)
+	return hset(wf, ctx, args[0], args[2], args[3], ttl, true)
 }
 
 func cmdHDEL(wf io.Writer, ctx *context, args [][]byte) error {
-	key, err := buildKey(ctx, args[0])
-	if err != nil {
-		return err
-	}
-	rec, err := ctx.client.Execute(ctx.writePolicy, key, MODULE_NAME, "HDEL", as.NewValue(string(args[1])))
-	if err != nil {
-		return err
-	}
-	return writeLine(wf, ":"+strconv.Itoa(rec.(int)))
+	return hset(wf, ctx, args[0], args[1], nil, -1, false)
 }
 
-func arrayPush(wf io.Writer, ctx *context, args [][]byte, f string, ttl int) error {
+func listOpReturnSize(wf io.Writer, ctx *context, args [][]byte, ttl int, op *as.Operation) error {
 	key, err := buildKey(ctx, args[0])
 	if err != nil {
 		return err
 	}
-	rec, err := ctx.client.Execute(ctx.writePolicy, key, MODULE_NAME, f, as.NewValue(binName), as.NewValue(encode(ctx, args[1])), as.NewValue(ttl))
+	rec, err := ctx.client.Operate(createWritePolicyEx(ttl, false), key, op, as.AddOp(as.NewBin(SIZE_ARRAY_FIELD, 1)))
 	if err != nil {
 		return err
 	}
-	return writeLine(wf, ":"+strconv.Itoa(rec.(int)))
+	return writeBinInt(wf, rec, binName)
+}
+
+func arrayRPush(wf io.Writer, ctx *context, args [][]byte, ttl int) error {
+	// ListInsertOp does not like to be called on an empty list and -1
+	// ListAppendOp is ok
+	return listOpReturnSize(wf, ctx, args, ttl, as.ListAppendOp(binName, encode(ctx, args[1])))
 }
 
 func cmdRPUSH(wf io.Writer, ctx *context, args [][]byte) error {
-	return arrayPush(wf, ctx, args, "RPUSH", -1)
+	return arrayRPush(wf, ctx, args, -1)
 }
 
 func cmdRPUSHEX(wf io.Writer, ctx *context, args [][]byte) error {
@@ -175,12 +210,15 @@ func cmdRPUSHEX(wf io.Writer, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
+	return arrayRPush(wf, ctx, args, ttl)
+}
 
-	return arrayPush(wf, ctx, args, "RPUSH", ttl)
+func arrayLPush(wf io.Writer, ctx *context, args [][]byte, ttl int) error {
+	return listOpReturnSize(wf, ctx, args, ttl, as.ListInsertOp(binName, 0, encode(ctx, args[1])))
 }
 
 func cmdLPUSH(wf io.Writer, ctx *context, args [][]byte) error {
-	return arrayPush(wf, ctx, args, "LPUSH", -1)
+	return arrayLPush(wf, ctx, args, -1)
 }
 
 func cmdLPUSHEX(wf io.Writer, ctx *context, args [][]byte) error {
@@ -188,53 +226,50 @@ func cmdLPUSHEX(wf io.Writer, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-
-	return arrayPush(wf, ctx, args, "LPUSH", ttl)
+	return arrayLPush(wf, ctx, args, ttl)
 }
 
-func arrayPop(wf io.Writer, ctx *context, args [][]byte, f string) error {
+func arrayPop(wf io.Writer, ctx *context, args [][]byte, index int) error {
 	key, err := buildKey(ctx, args[0])
 	if err != nil {
 		return err
 	}
-	rec, err := ctx.client.Execute(ctx.writePolicy, key, MODULE_NAME, f, as.NewValue(binName), as.NewValue(1), as.NewValue(-1))
+	size, err := ctx.client.Get(ctx.readPolicy, key, SIZE_ARRAY_FIELD)
 	if err != nil {
 		return err
 	}
-	if rec == nil {
+	if size == nil {
 		return writeLine(wf, "$-1")
 	}
-	a := rec.([]interface{})
-	if len(a) == 0 {
+	if size.Bins[SIZE_ARRAY_FIELD] == nil {
 		return writeLine(wf, "$-1")
 	}
-	x := rec.([]interface{})[0]
-	// backward compat
-	switch x.(type) {
+	if size.Bins[SIZE_ARRAY_FIELD].(int) == 0 {
+		return writeLine(wf, "$-1")
+	}
+	rec, err := ctx.client.Operate(ctx.writePolicy, key, as.ListPopOp(binName, index), as.AddOp(as.NewBin(SIZE_ARRAY_FIELD, -1)))
+	code := errResultCode(err)
+	if code == ase.BIN_TYPE_ERROR || code == ase.PARAMETER_ERROR {
+		return writeLine(wf, "$-1")
+	}
+	if err != nil {
+		return err
+	}
+	result := rec.Bins[binName]
+	switch result.(type) {
 	case int:
-		return writeByteArray(wf, []byte(strconv.Itoa(x.(int))))
-	case string:
-		s := x.(string)
-		if strings.HasPrefix(s, "__64__") {
-			bytes, err := base64.StdEncoding.DecodeString(s[6:])
-			if err != nil {
-				return err
-			}
-			return writeByteArray(wf, bytes)
-		}
-		return writeByteArray(wf, []byte(s))
-	// end of backward compat
+		return writeByteArray(wf, []byte(strconv.Itoa(result.(int))))
 	default:
-		return writeByteArray(wf, x.([]byte))
+		return writeByteArray(wf, result.([]byte))
 	}
 }
 
 func cmdRPOP(wf io.Writer, ctx *context, args [][]byte) error {
-	return arrayPop(wf, ctx, args, "RPOP")
+	return arrayPop(wf, ctx, args, -1)
 }
 
 func cmdLPOP(wf io.Writer, ctx *context, args [][]byte) error {
-	return arrayPop(wf, ctx, args, "LPOP")
+	return arrayPop(wf, ctx, args, 0)
 }
 
 func cmdLLEN(wf io.Writer, ctx *context, args [][]byte) error {
@@ -242,11 +277,11 @@ func cmdLLEN(wf io.Writer, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-	rec, err := ctx.client.Get(ctx.readPolicy, key, binName+"_size")
+	rec, err := ctx.client.Get(ctx.readPolicy, key, SIZE_ARRAY_FIELD)
 	if err != nil {
 		return err
 	}
-	return writeBinInt(wf, rec, binName+"_size")
+	return writeBinIntFull(wf, rec, SIZE_ARRAY_FIELD, ":0", "$-1")
 }
 
 func cmdLRANGE(wf io.Writer, ctx *context, args [][]byte) error {
@@ -262,14 +297,46 @@ func cmdLRANGE(wf io.Writer, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-	rec, err := ctx.client.Execute(ctx.writePolicy, key, MODULE_NAME, "LRANGE", as.NewValue(binName), as.NewValue(start), as.NewValue(stop))
+	err, result, _, _ := arrayRange(ctx, key, start, stop)
 	if err != nil {
 		return err
 	}
-	if rec == nil {
-		return writeLine(wf, "$-1")
+	return writeArray(wf, result)
+}
+
+func arrayRange(ctx *context, key *as.Key, start int, stop int) (error, []interface{}, uint32, bool) {
+	if ((stop > 0 && start > 0) || (stop < 0 && start < 0)) && start > stop {
+		return nil, make([]interface{}, 0), 0, false
 	}
-	return writeArray(wf, rec.([]interface{}))
+	count := stop - start + 1
+	if stop < start {
+		count -= 1
+	}
+	rec, err := ctx.client.Operate(ctx.writePolicy, key, as.ListGetRangeOp(binName, start, count), as.ListSizeOp(binName))
+	if errResultCode(err) == ase.PARAMETER_ERROR {
+		return nil, make([]interface{}, 0), 0, false
+	}
+	if err != nil {
+		return err, nil, 0, false
+	}
+	if rec == nil {
+		return nil, make([]interface{}, 0), 0, true
+	}
+	a := rec.Bins[binName].([]interface {})
+	size, result := a[len(a)-1], a[:len(a)-1]
+	if start < 0 && stop >= 0 {
+		end := size.(int) + start + 1
+		if end < len(result) {
+			result = result[0:end]
+		}
+	}
+	if start >= 0 && stop < 0 {
+		end := size.(int) + stop + 1
+		if end < len(result) {
+			result = result[0:end]
+		}
+	}
+	return nil, result, rec.Generation, false
 }
 
 func cmdLTRIM(wf io.Writer, ctx *context, args [][]byte) error {
@@ -285,14 +352,41 @@ func cmdLTRIM(wf io.Writer, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-	rec, err := ctx.client.Execute(ctx.writePolicy, key, MODULE_NAME, "LTRIM", as.NewValue(binName), as.NewValue(start), as.NewValue(stop))
+	for i := 0; i < ctx.generationRetries; i++ {
+		err := tryLTRIM(wf, ctx, key, start, stop)
+		if err == nil {
+			return writeLine(wf, "+OK")
+		}
+		if errResultCode(err) != ase.GENERATION_ERROR {
+			return err
+		}
+	}
+	return errors.New("Too many retry for ltrim")
+}
+
+func tryLTRIM(wf io.Writer, ctx *context, key *as.Key, start int, stop int) error {
+	err, result, generation, non_existent := arrayRange(ctx, key, start, stop)
 	if err != nil {
 		return err
 	}
-	if rec == nil {
-		return writeLine(wf, "$-1")
+	ops := make([]*as.Operation, 1)
+	ops[0] = as.ListClearOp(binName)
+	if len(result) > 0 {
+		ops = append(ops, as.ListAppendOp(binName, result...))
 	}
-	return writeLine(wf, "+OK")
+	ops = append(ops, as.PutOp(as.NewBin(SIZE_ARRAY_FIELD, len(result))))
+	policy := ctx.writePolicy
+	if non_existent {
+		return nil
+	}
+	if generation > 0 {
+		policy = createWritePolicyGeneration(generation, -1)
+	}
+	_, err = ctx.client.Operate(policy, key, ops...)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func hIncrByEx(wf io.Writer, ctx *context, k []byte, field string, incr int, ttl int) error {
@@ -301,7 +395,7 @@ func hIncrByEx(wf io.Writer, ctx *context, k []byte, field string, incr int, ttl
 		return err
 	}
 	bin := as.NewBin(field, incr)
-	rec, err := ctx.client.Operate(fillWritePolicyEx(ttl, false), key, as.AddOp(bin), as.GetOpForBin(field))
+	rec, err := ctx.client.Operate(createWritePolicyEx(ttl, false), key, as.AddOp(bin), as.GetOpForBin(field))
 	if err != nil {
 		if errResultCode(err) == ase.BIN_TYPE_ERROR {
 			return writeLine(wf, "$-1")
@@ -410,15 +504,15 @@ func cmdHMSET(wf io.Writer, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-	m := make(map[string]interface{})
+	bins := make([]*as.Bin, (len(args) - 1) / 2)
 	for i := 1; i+1 < len(args); i += 2 {
-		m[string(args[i])] = encode(ctx, args[i+1])
+		bins[i/2] = as.NewBin(string(args[i]), encode(ctx, args[i+1]))
 	}
-	rec, err := ctx.client.Execute(ctx.writePolicy, key, MODULE_NAME, "HMSET", as.NewValue(m))
+	err = ctx.client.PutBins(ctx.writePolicy, key, bins...)
 	if err != nil {
 		return err
 	}
-	return writeLine(wf, "+"+rec.(string))
+	return writeLine(wf, "+OK")
 }
 
 func cmdHGETALL(wf io.Writer, ctx *context, args [][]byte) error {
@@ -426,23 +520,29 @@ func cmdHGETALL(wf io.Writer, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-	rec, err := ctx.client.Execute(ctx.writePolicy, key, MODULE_NAME, "HGETALL")
+	rec, err := ctx.client.Get(ctx.readPolicy, key)
 	if err != nil {
 		return err
 	}
-	a := rec.([]interface{})
-	err = writeLine(wf, "*"+strconv.Itoa(len(a)))
-	if err != nil {
-		return err
-	}
-	for i := 0; i+1 < len(a); i += 2 {
-		err = writeByteArray(wf, []byte(a[i].(string)))
+	if rec == nil {
+		err = writeLine(wf, "*0")
 		if err != nil {
 			return err
 		}
-		err = writeValue(wf, a[i+1])
+	} else {
+		err = writeLine(wf, "*"+strconv.Itoa(len(rec.Bins) * 2))
 		if err != nil {
 			return err
+		}
+		for k, v := range rec.Bins {
+			err = writeByteArray(wf, []byte(k))
+			if err != nil {
+				return err
+			}
+			err = writeValue(wf, v)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -459,7 +559,7 @@ func cmdEXPIRE(wf io.Writer, ctx *context, args [][]byte) error {
 		return err
 	}
 
-	err = ctx.client.Touch(fillWritePolicyEx(ttl, false), key)
+	err = ctx.client.Touch(createWritePolicyEx(ttl, false), key)
 	if err != nil {
 		if errResultCode(err) == ase.KEY_NOT_FOUND_ERROR {
 			return writeLine(wf, ":0")
@@ -482,21 +582,28 @@ func cmdTTL(wf io.Writer, ctx *context, args [][]byte) error {
 	if rec == nil {
 		return writeLine(wf, ":-2")
 	}
-	return writeLine(wf, ":"+strconv.FormatUint(uint64(rec.Expiration), 10))
+	ttl := uint64(rec.Expiration)
+	if ttl >= 4294967295 {
+		return writeLine(wf, ":-1")
+	}
+	return writeLine(wf, ":"+strconv.FormatUint(ttl, 10))
 }
 
 func cmdFLUSHDB(wf io.Writer, ctx *context, args [][]byte) error {
-	stmt := as.NewStatement(ctx.ns, ctx.set)
-	del, err := ctx.client.ExecuteUDF(nil, stmt, MODULE_NAME, "FLUSHDB")
+	policy := as.NewScanPolicy()
+	recordset, err := ctx.client.ScanAll(policy, ctx.ns, ctx.set)
 	if err != nil {
 		return err
 	}
-
-	err = <- del.OnComplete()
-	if err != nil {
-		return err
+	for res := range recordset.Results() {
+		if res.Err != nil {
+			return err
+		}
+		_, err := ctx.client.Delete(ctx.writePolicy, res.Record.Key)
+		if err != nil {
+			return err
+		}
 	}
-
 	return writeLine(wf, "+OK")
 }
 
@@ -510,7 +617,7 @@ func cmdHMINCRBYEX(wf io.Writer, ctx *context, args [][]byte) error {
 		return err
 	}
 	if len(args) == 2 {
-		err := ctx.client.Touch(fillWritePolicyEx(ttl, false), key)
+		err := ctx.client.Touch(createWritePolicyEx(ttl, false), key)
 		if err != nil {
 			if errResultCode(err) != ase.KEY_NOT_FOUND_ERROR {
 				return err
@@ -518,16 +625,15 @@ func cmdHMINCRBYEX(wf io.Writer, ctx *context, args [][]byte) error {
 		}
 		return writeLine(wf, "+OK")
 	}
-	ops := make([]*as.Operation, 0)
-	a := args[2:]
-	for i := 0; i+1 < len(a); i += 2 {
-		incr, err := strconv.Atoi(string(a[i+1]))
+	ops := make([]*as.Operation, (len(args) - 2) / 2)
+	for i := 2; i+1 < len(args); i += 2 {
+		incr, err := strconv.Atoi(string(args[i+1]))
 		if err != nil {
 			return err
 		}
-		ops = append(ops, as.AddOp(as.NewBin(string(a[i]), incr)))
+		ops[(i/2)-1] = as.AddOp(as.NewBin(string(args[i]), incr))
 	}
-	_, err = ctx.client.Operate(fillWritePolicyEx(ttl, false), key, ops...)
+	_, err = ctx.client.Operate(createWritePolicyEx(ttl, false), key, ops...)
 	if err != nil {
 		return err
 	}

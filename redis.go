@@ -26,6 +26,7 @@ import (
 
 const binName = "r"
 const MODULE_NAME = "redis"
+const SIZE_ARRAY_FIELD = "__size__"
 
 func standardHandlers() map[string]handler {
 	handlers := make(map[string]handler)
@@ -118,6 +119,8 @@ func main() {
 	ns := flag.String("ns", "test", "Aerospike namespace")
 	configFile := flag.String("config_file", "", "Configuration file")
 	exitOnClusterLost := flag.Bool("exit_on_cluster_lost", true, "Exit with an error when the connection to the cluster is lost")
+	generationRetries := flag.Int("generation_retries", 10, "Number of retry when error conflict in HSET / HDEL / LTRIM")
+	connectionQueueSize := flag.Int("connection_queue_size", 256, "Max number of connections to each aerospike node")
 	flag.Parse()
 
 	config := []byte("{\"sets\":[{\"proto\":\"tcp\",\"listen\":\"127.0.0.1:6379\",\"set\":\"redis\"}]}")
@@ -137,6 +140,11 @@ func main() {
 
 	m := parsedConfig.(map[string]interface{})
 
+	if m["connection_queue_size"] != nil {
+		jsonConnectionQueueSize := getIntFromJson(m["connection_queue_size"])
+		connectionQueueSize = &jsonConnectionQueueSize
+	}
+
 	if m["max_fds"] != nil {
 		maxFds := getIntFromJson(m["max_fds"])
 		var rLimit syscall.Rlimit
@@ -148,6 +156,8 @@ func main() {
 	  }
 	  log.Printf("Set max openfile to %d", maxFds)
 	}
+
+	log.Printf("Set connection queue size to %d", *connectionQueueSize)
 
 	jsonAeroHost := m["aerospike_ips"]
 
@@ -171,6 +181,7 @@ func main() {
 			log.Printf("Connecting to aero on %s:%d", i, aPort)
 			policy := as.NewClientPolicy()
 			policy.RequestProleReplicas = true
+			policy.ConnectionQueueSize = *connectionQueueSize
 			client, err = as.NewClientWithPolicy(policy, i, aPort)
 			if err == nil {
 				log.Printf("Connected to aero on %s:%d, namespace %s", i, aPort, *ns)
@@ -186,7 +197,7 @@ func main() {
 	}
 
 	readPolicy := createReadPolicy()
-	writePolicy := fillWritePolicyEx(-1, false)
+	writePolicy := createWritePolicyEx(-1, false)
 
 	var wg sync.WaitGroup
 
@@ -221,12 +232,7 @@ func main() {
 
 		log.Printf("%s: Listening on %s", set, listen)
 
-		backwardWriteCompat := false
-		if m["backwardWriteCompat"] != nil {
-			backwardWriteCompat = true
-			log.Printf("%s: Write backward compat", set)
-		}
-		ctx := context{client, *exitOnClusterLost, *ns, set, readPolicy, writePolicy, backwardWriteCompat, 0, 0, 0, 0, 0, nil, 0, false}
+		ctx := context{client, *exitOnClusterLost, *ns, set, readPolicy, writePolicy, 0, 0, 0, 0, 0, nil, 0, false, *generationRetries}
 
 		if statsdConfig != nil {
 			log.Printf("%s: Sending stats to statsd %s", set, statsdConfig)

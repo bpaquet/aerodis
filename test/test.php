@@ -292,6 +292,19 @@ compare($r->ltrim('myKey', 2, 4), true);
 compare($r->lsize('myKey'), 0);
 compare($r->lRange('myKey', 0, 0), array());
 
+$r->del('myKey');
+$r->set('myKey', 'a');
+compare($r->lRange('myKey', 0, 0), false);
+compare($r->lsize('myKey'), false);
+compare($r->rpush('myKey', 'a'), false);
+compare($r->lpush('myKey', 'a'), false);
+compare($r->ltrim('myKey', 2, 4), false);
+
+$r->del('myKey');
+compare($r->lRange('myKey', 0, 0), array());
+compare($r->ltrim('myKey', 2, 4), true);
+compare($r->lsize('myKey'), 0);
+
 echo("mGet mSet\n");
 $r->del('myKey1');
 $r->del('myKey2');
@@ -308,12 +321,13 @@ $r->del('myKey');
 compare($r->hGet('myKey', "a"), false);
 compare($r->hSet('myKey', "a", 2), 1);
 compare($r->hGet('myKey', "z"), false);
+compare($r->hSet('myKey', "z", 3), 1);
 compare($r->hGet('myKey', "a"), '2');
 compare($r->hSet('myKey', "a", 1), 0);
 compare($r->hSet('myKey', "b", "a"), 1);
 compare($r->hGet('myKey', "a"), '1');
 compare($r->hGet('myKey', "b"), "a");
-compare($r->hSet('myKey', "a",0), 0);
+compare($r->hSet('myKey', "a", 0), 0);
 compare($r->hGet('myKey', "a"), '0');
 compare($r->hDel('myKey', "a"), 1);
 compare($r->hDel('myKey', "a"), 0);
@@ -440,8 +454,7 @@ compare($r->setTimeout('myKey', 200), true);
 upper($r->ttl('myKey'), 100);
 lower($r->ttl('myKey'), 1000);
 compare($r->set('myKey', "b"), true);
-upper($r->ttl('myKey'), 100);
-lower($r->ttl('myKey'), 1000);
+compare($r->ttl('myKey'), -1);
 
 echo("hSet setTimeout\n");
 $r->del('myKey');
@@ -553,41 +566,41 @@ if (!isset($_ENV['USE_REAL_REDIS'])) {
   compare($r->lSize('myKey'), 1);
   sleep(3);
   compare($r->lSize('myKey'), 0);
+
+  echo("IncrByEx / DecrByEx\n");
+
+  $r->del('myKey');
+  compare($r->incrByEx('myKey', 4, 2), 2);
+  compare($r->get('myKey'), '2');
+  upper($r->ttl('myKey'), 1);
+  sleep(1);
+  compare($r->get('myKey'), '2');
+  upper($r->ttl('myKey'), 1);
+  sleep(5);
+  compare($r->get('myKey'), false);
+
+  compare($r->incrByEx('myKey', 4, 2), 2);
+  compare($r->get('myKey'), '2');
+  upper($r->ttl('myKey'), 1);
+  compare($r->incrBy('myKey', 4), 6);
+  compare($r->get('myKey'), '6');
+  sleep(1);
+  compare($r->get('myKey'), '6');
+  upper($r->ttl('myKey'), 1);
+  sleep(5);
+  compare($r->get('myKey'), false);
+
+  compare($r->decrByEx('myKey', 4, 2), -2);
+  compare($r->get('myKey'), '-2');
+  upper($r->ttl('myKey'), 1);
+  compare($r->incrBy('myKey', 4), 2);
+  compare($r->get('myKey'), '2');
+  sleep(1);
+  compare($r->get('myKey'), '2');
+  upper($r->ttl('myKey'), 1);
+  sleep(5);
+  compare($r->get('myKey'), false);
 }
-
-echo("IncrByEx / DecrByEx\n");
-
-$r->del('myKey');
-compare($r->incrByEx('myKey', 4, 2), 2);
-compare($r->get('myKey'), '2');
-upper($r->ttl('myKey'), 1);
-sleep(1);
-compare($r->get('myKey'), '2');
-upper($r->ttl('myKey'), 1);
-sleep(5);
-compare($r->get('myKey'), false);
-
-compare($r->incrByEx('myKey', 4, 2), 2);
-compare($r->get('myKey'), '2');
-upper($r->ttl('myKey'), 1);
-compare($r->incrBy('myKey', 4), 6);
-compare($r->get('myKey'), '6');
-sleep(1);
-compare($r->get('myKey'), '6');
-upper($r->ttl('myKey'), 1);
-sleep(5);
-compare($r->get('myKey'), false);
-
-compare($r->decrByEx('myKey', 4, 2), -2);
-compare($r->get('myKey'), '-2');
-upper($r->ttl('myKey'), 1);
-compare($r->incrBy('myKey', 4), 2);
-compare($r->get('myKey'), '2');
-sleep(1);
-compare($r->get('myKey'), '2');
-upper($r->ttl('myKey'), 1);
-sleep(5);
-compare($r->get('myKey'), false);
 
 echo("SetEx\n");
 

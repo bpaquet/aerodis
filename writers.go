@@ -1,12 +1,9 @@
 package main
 
 import (
-	"bytes"
-	"encoding/base64"
 	"io"
 	"log"
 	"strconv"
-	"strings"
 
 	as "github.com/aerospike/aerospike-client-go"
 )
@@ -37,36 +34,19 @@ func writeByteArray(wf io.Writer, buf []byte) error {
 }
 
 func writeArray(wf io.Writer, array []interface{}) error {
+	if len(array) == 1 {
+		if array[0] == nil {
+			return writeLine(wf, "*0")
+		}
+	}
 	err := writeLine(wf, "*"+strconv.Itoa(len(array)))
 	if err != nil {
 		return err
 	}
 	for _, e := range array {
-		// backward compat
-		switch e.(type) {
-		case string:
-			s := e.(string)
-			if strings.HasPrefix(s, "__64__") {
-				bytes, err := base64.StdEncoding.DecodeString(s[6:])
-				if err != nil {
-					return err
-				}
-				err = writeByteArray(wf, bytes)
-				if err != nil {
-					return err
-				}
-			} else {
-				err := writeByteArray(wf, []byte(s))
-				if err != nil {
-					return err
-				}
-			}
-		default:
-			// end of backward compat
-			err := writeByteArray(wf, e.([]byte))
-			if err != nil {
-				return err
-			}
+		err := writeByteArray(wf, e.([]byte))
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -99,18 +79,8 @@ func writeValue(wf io.Writer, x interface{}) error {
 	switch x.(type) {
 	case int:
 		return writeByteArray(wf, []byte(strconv.Itoa(x.(int))))
-	// backward compat
 	case string:
-		s := x.(string)
-		if strings.HasPrefix(s, "__64__") {
-			bytes, err := base64.StdEncoding.DecodeString(s[6:])
-			if err != nil {
-				return err
-			}
-			return writeByteArray(wf, bytes)
-		}
-		return writeByteArray(wf, []byte(s))
-	// end of backward compat
+		return writeByteArray(wf, []byte(x.(string)))
 	default:
 		return writeByteArray(wf, x.([]byte))
 	}
@@ -128,13 +98,16 @@ func writeBin(wf io.Writer, rec *as.Record, binName string, nilValue string) err
 }
 
 func writeBinInt(wf io.Writer, rec *as.Record, binName string) error {
-	nilValue := ":0"
+	return writeBinIntFull(wf, rec, binName, ":0", ":0")
+}
+
+func writeBinIntFull(wf io.Writer, rec *as.Record, binName string, nilValue string, nilBinValue string) error {
 	if rec == nil {
 		return writeLine(wf, nilValue)
 	}
 	x := rec.Bins[binName]
 	if x == nil {
-		return writeLine(wf, nilValue)
+		return writeLine(wf, nilBinValue)
 	}
 	return writeLine(wf, ":"+strconv.Itoa(x.(int)))
 }
@@ -170,11 +143,5 @@ func encode(ctx *context, buf []byte) interface{} {
 			return x
 		}
 	}
-	if !ctx.backwardWriteCompat {
-		return buf
-	}
-	if bytes.IndexByte(buf, 0) == -1 {
-		return string(buf)
-	}
-	return "__64__" + base64.StdEncoding.EncodeToString(buf)
+	return buf
 }

@@ -81,7 +81,6 @@ There is some limitations:
 
 ## On Aerospike:
 
-* Install the (``redis.lua``)[redis.lua] module: ``register module 'redis.lua'``
 * For expanded map, create the secondary index: ``create index expanded_map_xxx_yyy on xxx.yyy (m) STRING'``,
 where ``xxx.yyy`` is the namespace / set which will use expanded map.
 
@@ -137,7 +136,6 @@ time synchronized if you hqve TTL issues.
 
 * Statsd statistics
 * Write back
-* Backward compatibility
 
 ## License
 

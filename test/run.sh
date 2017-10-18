@@ -1,6 +1,7 @@
 #!/bin/bash -e
 
 pkill aerodis || true
+pkill redis-server || true
 
 echo "Recompiling"
 cd ..

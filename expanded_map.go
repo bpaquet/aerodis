@@ -77,7 +77,7 @@ func _compositeExistsOrCreate(ctx *context, k string, ttl int, canRetry bool) (*
 		if err != nil {
 			return nil, false, err
 		}
-		err = ctx.client.Touch(fillWritePolicyEx(ttl, false), key)
+		err = ctx.client.Touch(createWritePolicyEx(ttl, false), key)
 		if err != nil {
 			return nil, false, err
 		}
@@ -88,7 +88,7 @@ func _compositeExistsOrCreate(ctx *context, k string, ttl int, canRetry bool) (*
 	if err != nil {
 		return nil, false, err
 	}
-	err = ctx.client.PutBins(fillWritePolicyEx(ttl, true), key, as.NewBin(ROOT_BIN_NAME, kk), as.NewBin("created_at", now()))
+	err = ctx.client.PutBins(createWritePolicyEx(ttl, true), key, as.NewBin(ROOT_BIN_NAME, kk), as.NewBin("created_at", now()))
 	if err != nil {
 		if errResultCode(err) == ase.KEY_EXISTS_ERROR && canRetry {
 			return _compositeExistsOrCreate(ctx, k, ttl, false)
@@ -134,7 +134,7 @@ func expandedMapHset(wf io.Writer, ctx *context, k []byte, kk []byte, v []byte, 
 	if err != nil {
 		return err
 	}
-	err = ctx.client.PutBins(fillWritePolicyEx(ctx.expandedMapDefaultTTL, false), key, as.NewBin(MAIN_KEY_BIN_NAME, *suffixedKey), as.NewBin(SECOND_KEY_BIN_NAME, string(kk)), as.NewBin(VALUE_BIN_NAME, encode(ctx, v)), as.NewBin("created_at", now()))
+	err = ctx.client.PutBins(createWritePolicyEx(ctx.expandedMapDefaultTTL, false), key, as.NewBin(MAIN_KEY_BIN_NAME, *suffixedKey), as.NewBin(SECOND_KEY_BIN_NAME, string(kk)), as.NewBin(VALUE_BIN_NAME, encode(ctx, v)), as.NewBin("created_at", now()))
 	if err != nil {
 		return err
 	}
@@ -187,7 +187,7 @@ func cmdExpandedMapEXPIRE(wf io.Writer, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-	err = ctx.client.Touch(fillWritePolicyEx(ttl, false), key)
+	err = ctx.client.Touch(createWritePolicyEx(ttl, false), key)
 	if err == nil {
 		return writeLine(wf, ":1")
 	}
@@ -240,7 +240,7 @@ func cmdExpandedMapHMSET(wf io.Writer, ctx *context, args [][]byte) error {
 		if err != nil {
 			return err
 		}
-		err = ctx.client.PutBins(fillWritePolicyEx(ctx.expandedMapDefaultTTL, false), key, as.NewBin(MAIN_KEY_BIN_NAME, *suffixedKey), as.NewBin(SECOND_KEY_BIN_NAME, string(args[i])), as.NewBin(VALUE_BIN_NAME, encode(ctx, args[i+1])), as.NewBin("created_at", now()))
+		err = ctx.client.PutBins(createWritePolicyEx(ctx.expandedMapDefaultTTL, false), key, as.NewBin(MAIN_KEY_BIN_NAME, *suffixedKey), as.NewBin(SECOND_KEY_BIN_NAME, string(args[i])), as.NewBin(VALUE_BIN_NAME, encode(ctx, args[i+1])), as.NewBin("created_at", now()))
 		if err != nil {
 			return err
 		}
@@ -299,7 +299,7 @@ func compositeIncr(wf io.Writer, ctx *context, suffixedKey *string, field string
 	if err != nil {
 		return err
 	}
-	rec, err := ctx.client.Operate(fillWritePolicyEx(ctx.expandedMapDefaultTTL, false), key, as.PutOp(as.NewBin(MAIN_KEY_BIN_NAME, *suffixedKey)), as.PutOp(as.NewBin(SECOND_KEY_BIN_NAME, field)), as.AddOp(as.NewBin(VALUE_BIN_NAME, value)), as.GetOpForBin(VALUE_BIN_NAME))
+	rec, err := ctx.client.Operate(createWritePolicyEx(ctx.expandedMapDefaultTTL, false), key, as.PutOp(as.NewBin(MAIN_KEY_BIN_NAME, *suffixedKey)), as.PutOp(as.NewBin(SECOND_KEY_BIN_NAME, field)), as.AddOp(as.NewBin(VALUE_BIN_NAME, value)), as.GetOpForBin(VALUE_BIN_NAME))
 	if err != nil {
 		if errResultCode(err) == ase.BIN_TYPE_ERROR {
 			return writeLine(wf, "$-1")
@@ -357,7 +357,7 @@ func cmdExpandedMapHMINCRBYEX(wf io.Writer, ctx *context, args [][]byte) error {
 			if err != nil {
 				return err
 			}
-			_, err = ctx.client.Operate(fillWritePolicyEx(ctx.expandedMapDefaultTTL, false), key, as.PutOp(as.NewBin(MAIN_KEY_BIN_NAME, *suffixedKey)), as.PutOp(as.NewBin(SECOND_KEY_BIN_NAME, string(a[i]))), as.AddOp(as.NewBin(VALUE_BIN_NAME, incr)))
+			_, err = ctx.client.Operate(createWritePolicyEx(ctx.expandedMapDefaultTTL, false), key, as.PutOp(as.NewBin(MAIN_KEY_BIN_NAME, *suffixedKey)), as.PutOp(as.NewBin(SECOND_KEY_BIN_NAME, string(a[i]))), as.AddOp(as.NewBin(VALUE_BIN_NAME, incr)))
 			if err != nil {
 				return err
 			}
