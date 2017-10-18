@@ -98,13 +98,16 @@ func writeBin(wf io.Writer, rec *as.Record, binName string, nilValue string) err
 }
 
 func writeBinInt(wf io.Writer, rec *as.Record, binName string) error {
-	nilValue := ":0"
+	return writeBinIntFull(wf, rec, binName, ":0", ":0")
+}
+
+func writeBinIntFull(wf io.Writer, rec *as.Record, binName string, nilValue string, nilBinValue string) error {
 	if rec == nil {
 		return writeLine(wf, nilValue)
 	}
 	x := rec.Bins[binName]
 	if x == nil {
-		return writeLine(wf, nilValue)
+		return writeLine(wf, nilBinValue)
 	}
 	return writeLine(wf, ":"+strconv.Itoa(x.(int)))
 }

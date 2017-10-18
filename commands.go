@@ -79,7 +79,7 @@ func setex(wf io.Writer, ctx *context, k []byte, binName string, content []byte,
 }
 
 func cmdSET(wf io.Writer, ctx *context, args [][]byte) error {
-	return setex(wf, ctx, args[0], binName, args[1], -1, false)
+	return setex(wf, ctx, args[0], binName, args[1], -2, false)
 }
 
 func cmdSETEX(wf io.Writer, ctx *context, args [][]byte) error {
@@ -281,7 +281,7 @@ func cmdLLEN(wf io.Writer, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-	return writeBinInt(wf, rec, SIZE_ARRAY_FIELD)
+	return writeBinIntFull(wf, rec, SIZE_ARRAY_FIELD, ":0", "$-1")
 }
 
 func cmdLRANGE(wf io.Writer, ctx *context, args [][]byte) error {
@@ -297,16 +297,16 @@ func cmdLRANGE(wf io.Writer, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-	err, result, _ := arrayRange(ctx, key, start, stop)
+	err, result, _, _ := arrayRange(ctx, key, start, stop)
 	if err != nil {
 		return err
 	}
 	return writeArray(wf, result)
 }
 
-func arrayRange(ctx *context, key *as.Key, start int, stop int) (error, []interface{}, uint32) {
+func arrayRange(ctx *context, key *as.Key, start int, stop int) (error, []interface{}, uint32, bool) {
 	if ((stop > 0 && start > 0) || (stop < 0 && start < 0)) && start > stop {
-		return nil, make([]interface{}, 0), 0
+		return nil, make([]interface{}, 0), 0, false
 	}
 	count := stop - start + 1
 	if stop < start {
@@ -314,13 +314,13 @@ func arrayRange(ctx *context, key *as.Key, start int, stop int) (error, []interf
 	}
 	rec, err := ctx.client.Operate(ctx.writePolicy, key, as.ListGetRangeOp(binName, start, count), as.ListSizeOp(binName))
 	if errResultCode(err) == ase.PARAMETER_ERROR {
-		return nil, make([]interface{}, 0), 0
+		return nil, make([]interface{}, 0), 0, false
 	}
 	if err != nil {
-		return err, nil, 0
+		return err, nil, 0, false
 	}
 	if rec == nil {
-		return nil, make([]interface{}, 0), 0
+		return nil, make([]interface{}, 0), 0, true
 	}
 	a := rec.Bins[binName].([]interface {})
 	size, result := a[len(a)-1], a[:len(a)-1]
@@ -336,7 +336,7 @@ func arrayRange(ctx *context, key *as.Key, start int, stop int) (error, []interf
 			result = result[0:end]
 		}
 	}
-	return nil, result, rec.Generation
+	return nil, result, rec.Generation, false
 }
 
 func cmdLTRIM(wf io.Writer, ctx *context, args [][]byte) error {
@@ -365,7 +365,7 @@ func cmdLTRIM(wf io.Writer, ctx *context, args [][]byte) error {
 }
 
 func tryLTRIM(wf io.Writer, ctx *context, key *as.Key, start int, stop int) error {
-	err, result, generation := arrayRange(ctx, key, start, stop)
+	err, result, generation, non_existent := arrayRange(ctx, key, start, stop)
 	if err != nil {
 		return err
 	}
@@ -376,6 +376,9 @@ func tryLTRIM(wf io.Writer, ctx *context, key *as.Key, start int, stop int) erro
 	}
 	ops = append(ops, as.PutOp(as.NewBin(SIZE_ARRAY_FIELD, len(result))))
 	policy := ctx.writePolicy
+	if non_existent {
+		return nil
+	}
 	if generation > 0 {
 		policy = createWritePolicyGeneration(generation, -1)
 	}
@@ -579,7 +582,11 @@ func cmdTTL(wf io.Writer, ctx *context, args [][]byte) error {
 	if rec == nil {
 		return writeLine(wf, ":-2")
 	}
-	return writeLine(wf, ":"+strconv.FormatUint(uint64(rec.Expiration), 10))
+	ttl := uint64(rec.Expiration)
+	if ttl >= 4294967295 {
+		return writeLine(wf, ":-1")
+	}
+	return writeLine(wf, ":"+strconv.FormatUint(ttl, 10))
 }
 
 func cmdFLUSHDB(wf io.Writer, ctx *context, args [][]byte) error {

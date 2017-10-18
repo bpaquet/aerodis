@@ -30,6 +30,11 @@ func createWritePolicyGeneration(generation uint32, ttl int) *as.WritePolicy {
 }
 
 func createWritePolicyEx(ttl int, createOnly bool) *as.WritePolicy {
+	if ttl == -2 {
+		policy := as.NewWritePolicy(0, as.TTLDontExpire)
+		fillWritePolicy(policy)
+		return policy
+	}
 	policy := as.NewWritePolicy(0, as.TTLDontUpdate)
 	if ttl != -1 {
 		policy = as.NewWritePolicy(0, uint32(ttl))
