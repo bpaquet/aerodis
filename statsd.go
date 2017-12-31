@@ -33,16 +33,17 @@ func statsd(target string, ctx *context) {
 		log.Fatal("Unable to get hostname", err.Error())
 		return
 	}
-	start := "redis_go." + hostname + "." + ctx.ns + "." + ctx.set + "."
+	start := "redis_go." + hostname + "."
+	end := ",ns=" + ctx.ns + ",set=" + ctx.set
 	ticker := time.NewTicker(time.Second * time.Duration(5))
 	for range ticker.C {
 		ok := atomic.SwapUint32(&(*ctx).counterOk, 0)
 		wbOk := atomic.SwapUint32(&(*ctx).counterWbOk, 0)
 		err := atomic.SwapUint32(&(*ctx).counterErr, 0)
 		c := atomic.LoadInt32(&(*ctx).gaugeConn)
-		udpSend(conn, start+"ops_ok:"+strconv.Itoa(int(ok))+"|c")
-		udpSend(conn, start+"ops_wbok:"+strconv.Itoa(int(wbOk))+"|c")
-		udpSend(conn, start+"ops_err:"+strconv.Itoa(int(err))+"|c")
-		udpSend(conn, start+"conn:"+strconv.Itoa(int(c))+"|g")
+		udpSend(conn, start+"ops,type=ok"+end+":"+strconv.Itoa(int(ok))+"|c")
+		udpSend(conn, start+"ops,type=wbok"+end+":"+strconv.Itoa(int(wbOk))+"|c")
+		udpSend(conn, start+"ops,type=err"+end+":"+strconv.Itoa(int(err))+"|c")
+		udpSend(conn, start+"conn"+end+":"+strconv.Itoa(int(c))+"|g")
 	}
 }
