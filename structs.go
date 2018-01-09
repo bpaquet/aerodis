@@ -16,7 +16,7 @@ type handler struct {
 
 type context struct {
 	client                *as.Client
-	exitOnClusterLost			bool
+	exitOnClusterLost     bool
 	ns                    string
 	set                   string
 	readPolicy            *as.BasePolicy
@@ -28,6 +28,6 @@ type context struct {
 	expandedMapDefaultTTL int
 	expandedMapCache      *freecache.Cache
 	expandedMapCacheTTL   int
-	logCommands					  bool
-	generationRetries			int
+	logCommands           bool
+	generationRetries     int
 }

@@ -278,9 +278,9 @@ func cmdExpandedMapHGETALL(wf io.Writer, ctx *context, args [][]byte) error {
 	if suffixedKey == nil {
 		return writeArray(wf, make([]interface{}, 0))
 	}
-	statment := as.NewStatement(ctx.ns, ctx.set)
-	statment.Addfilter(as.NewEqualFilter(MAIN_KEY_BIN_NAME, *suffixedKey))
-	recordset, err := ctx.client.Query(nil, statment)
+	statement := as.NewStatement(ctx.ns, ctx.set)
+	statement.Addfilter(as.NewEqualFilter(MAIN_KEY_BIN_NAME, *suffixedKey))
+	recordset, err := ctx.client.Query(nil, statement)
 	if err != nil {
 		return err
 	}

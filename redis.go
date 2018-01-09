@@ -17,8 +17,8 @@ import (
 	"strconv"
 	"sync"
 	"sync/atomic"
-	"time"
 	"syscall"
+	"time"
 
 	as "github.com/aerospike/aerospike-client-go"
 	"github.com/coocood/freecache"
@@ -151,10 +151,10 @@ func main() {
 		rLimit.Max = uint64(maxFds)
 		rLimit.Cur = uint64(maxFds)
 		err := syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit)
-	  if err != nil {
-	  	panic(err)
-	  }
-	  log.Printf("Set max openfile to %d", maxFds)
+		if err != nil {
+			panic(err)
+		}
+		log.Printf("Set max openfile to %d", maxFds)
 	}
 
 	log.Printf("Set connection queue size to %d", *connectionQueueSize)
@@ -176,7 +176,7 @@ func main() {
 	var err error
 	connected := false
 
-	for ! connected {
+	for !connected {
 		for _, i := range hosts {
 			log.Printf("Connecting to aero on %s:%d", i, aPort)
 			policy := as.NewClientPolicy()
@@ -191,7 +191,7 @@ func main() {
 				log.Printf("Unable to connect to %s:%d, %s", i, aPort, err)
 			}
 		}
-		if ! connected {
+		if !connected {
 			time.Sleep(5 * time.Second)
 		}
 	}
@@ -375,7 +375,7 @@ func handleCommand(wf io.Writer, args [][]byte, handlers map[string]handler, ctx
 		if ok {
 			if ctx.logCommands {
 				end := ""
-				for i := 0; i < h.argsLogCount; i ++ {
+				for i := 0; i < h.argsLogCount; i++ {
 					end += fmt.Sprintf(" %v", string(args[i]))
 				}
 				log.Printf("[ %s ] Command: %s:%s", ctx.set, cmd, end)
@@ -394,7 +394,7 @@ func handleCommand(wf io.Writer, args [][]byte, handlers map[string]handler, ctx
 			}
 			err := h.f(targetWriter, ctx, args)
 			if err != nil {
-				if ! ctx.client.IsConnected() && ctx.exitOnClusterLost {
+				if !ctx.client.IsConnected() && ctx.exitOnClusterLost {
 					panic(fmt.Errorf("Connection to cluster lost: '%s'", err))
 				}
 				return fmt.Errorf("Aerospike error: '%s'", err)

@@ -152,7 +152,7 @@ func hset(wf io.Writer, ctx *context, k []byte, kk []byte, v interface{}, ttl in
 	for i := 0; i < ctx.generationRetries; i++ {
 		err, existed := tryHSet(ctx, key, field, v, ttl)
 		if err == nil {
-			if ! set {
+			if !set {
 				existed = !existed
 			}
 			if existed {
@@ -322,7 +322,7 @@ func arrayRange(ctx *context, key *as.Key, start int, stop int) (error, []interf
 	if rec == nil {
 		return nil, make([]interface{}, 0), 0, true
 	}
-	a := rec.Bins[binName].([]interface {})
+	a := rec.Bins[binName].([]interface{})
 	size, result := a[len(a)-1], a[:len(a)-1]
 	if start < 0 && stop >= 0 {
 		end := size.(int) + start + 1
@@ -504,7 +504,7 @@ func cmdHMSET(wf io.Writer, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-	bins := make([]*as.Bin, (len(args) - 1) / 2)
+	bins := make([]*as.Bin, (len(args)-1)/2)
 	for i := 1; i+1 < len(args); i += 2 {
 		bins[i/2] = as.NewBin(string(args[i]), encode(ctx, args[i+1]))
 	}
@@ -530,7 +530,7 @@ func cmdHGETALL(wf io.Writer, ctx *context, args [][]byte) error {
 			return err
 		}
 	} else {
-		err = writeLine(wf, "*"+strconv.Itoa(len(rec.Bins) * 2))
+		err = writeLine(wf, "*"+strconv.Itoa(len(rec.Bins)*2))
 		if err != nil {
 			return err
 		}
@@ -625,7 +625,7 @@ func cmdHMINCRBYEX(wf io.Writer, ctx *context, args [][]byte) error {
 		}
 		return writeLine(wf, "+OK")
 	}
-	ops := make([]*as.Operation, (len(args) - 2) / 2)
+	ops := make([]*as.Operation, (len(args)-2)/2)
 	for i := 2; i+1 < len(args); i += 2 {
 		incr, err := strconv.Atoi(string(args[i+1]))
 		if err != nil {
