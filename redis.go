@@ -25,8 +25,8 @@ import (
 )
 
 const binName = "r"
-const MODULE_NAME = "redis"
-const SIZE_ARRAY_FIELD = "__size__"
+const moduleName = "redis"
+const sizeArrayField = "__size__"
 
 func standardHandlers() map[string]handler {
 	handlers := make(map[string]handler)

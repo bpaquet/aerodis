@@ -12,11 +12,11 @@ import (
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-const MAIN_SUFFIX = "____MAIN____"
-const ROOT_BIN_NAME = "z"
-const VALUE_BIN_NAME = "v"
-const MAIN_KEY_BIN_NAME = "m"
-const SECOND_KEY_BIN_NAME = "s"
+const mainSuffix = "____MAIN____"
+const rootBinName = "z"
+const valueBinName = "v"
+const mainKeyBinName = "m"
+const secondKeyBinName = "s"
 
 func randStringBytes(n int) string {
 	b := make([]byte, n)
@@ -42,16 +42,16 @@ func compositeExists(ctx *context, k string) (*string, error) {
 			return &s, nil
 		}
 	}
-	key, err := formatCompositeKey(ctx, k, MAIN_SUFFIX)
+	key, err := formatCompositeKey(ctx, k, mainSuffix)
 	if err != nil {
 		return nil, err
 	}
-	rec, err := ctx.client.Get(ctx.readPolicy, key, ROOT_BIN_NAME)
+	rec, err := ctx.client.Get(ctx.readPolicy, key, rootBinName)
 	if err != nil {
 		return nil, err
 	}
-	if rec != nil && rec.Bins[ROOT_BIN_NAME] != nil {
-		s := rec.Bins[ROOT_BIN_NAME].(string)
+	if rec != nil && rec.Bins[rootBinName] != nil {
+		s := rec.Bins[rootBinName].(string)
 		if ctx.expandedMapCache != nil {
 			ctx.expandedMapCache.Set([]byte(k), []byte(s), ctx.expandedMapCacheTTL)
 		}
@@ -73,7 +73,7 @@ func _compositeExistsOrCreate(ctx *context, k string, ttl int, canRetry bool) (*
 		if ttl == -1 {
 			return suffixedKey, false, nil
 		}
-		key, err := formatCompositeKey(ctx, k, MAIN_SUFFIX)
+		key, err := formatCompositeKey(ctx, k, mainSuffix)
 		if err != nil {
 			return nil, false, err
 		}
@@ -84,11 +84,11 @@ func _compositeExistsOrCreate(ctx *context, k string, ttl int, canRetry bool) (*
 		return suffixedKey, false, nil
 	}
 	kk := k + "_" + randStringBytes(8)
-	key, err := formatCompositeKey(ctx, k, MAIN_SUFFIX)
+	key, err := formatCompositeKey(ctx, k, mainSuffix)
 	if err != nil {
 		return nil, false, err
 	}
-	err = ctx.client.PutBins(createWritePolicyEx(ttl, true), key, as.NewBin(ROOT_BIN_NAME, kk), as.NewBin("created_at", now()))
+	err = ctx.client.PutBins(createWritePolicyEx(ttl, true), key, as.NewBin(rootBinName, kk), as.NewBin("created_at", now()))
 	if err != nil {
 		if errResultCode(err) == ase.KEY_EXISTS_ERROR && canRetry {
 			return _compositeExistsOrCreate(ctx, k, ttl, false)
@@ -114,11 +114,11 @@ func cmdExpandedMapHGET(wf io.Writer, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-	rec, err := ctx.client.Get(ctx.readPolicy, key, VALUE_BIN_NAME)
+	rec, err := ctx.client.Get(ctx.readPolicy, key, valueBinName)
 	if err != nil {
 		return err
 	}
-	return writeBin(wf, rec, VALUE_BIN_NAME, "$-1")
+	return writeBin(wf, rec, valueBinName, "$-1")
 }
 
 func expandedMapHset(wf io.Writer, ctx *context, k []byte, kk []byte, v []byte, ttl int) error {
@@ -134,7 +134,7 @@ func expandedMapHset(wf io.Writer, ctx *context, k []byte, kk []byte, v []byte, 
 	if err != nil {
 		return err
 	}
-	err = ctx.client.PutBins(createWritePolicyEx(ctx.expandedMapDefaultTTL, false), key, as.NewBin(MAIN_KEY_BIN_NAME, *suffixedKey), as.NewBin(SECOND_KEY_BIN_NAME, string(kk)), as.NewBin(VALUE_BIN_NAME, encode(ctx, v)), as.NewBin("created_at", now()))
+	err = ctx.client.PutBins(createWritePolicyEx(ctx.expandedMapDefaultTTL, false), key, as.NewBin(mainKeyBinName, *suffixedKey), as.NewBin(secondKeyBinName, string(kk)), as.NewBin(valueBinName, encode(ctx, v)), as.NewBin("created_at", now()))
 	if err != nil {
 		return err
 	}
@@ -183,7 +183,7 @@ func cmdExpandedMapEXPIRE(wf io.Writer, ctx *context, args [][]byte) error {
 	if err != nil {
 		return err
 	}
-	key, err := formatCompositeKey(ctx, string(args[0]), MAIN_SUFFIX)
+	key, err := formatCompositeKey(ctx, string(args[0]), mainSuffix)
 	if err != nil {
 		return err
 	}
@@ -198,7 +198,7 @@ func cmdExpandedMapEXPIRE(wf io.Writer, ctx *context, args [][]byte) error {
 }
 
 func cmdExpandedMapTTL(wf io.Writer, ctx *context, args [][]byte) error {
-	key, err := formatCompositeKey(ctx, string(args[0]), MAIN_SUFFIX)
+	key, err := formatCompositeKey(ctx, string(args[0]), mainSuffix)
 	if err != nil {
 		return err
 	}
@@ -213,7 +213,7 @@ func cmdExpandedMapTTL(wf io.Writer, ctx *context, args [][]byte) error {
 }
 
 func cmdExpandedMapDEL(wf io.Writer, ctx *context, args [][]byte) error {
-	key, err := formatCompositeKey(ctx, string(args[0]), MAIN_SUFFIX)
+	key, err := formatCompositeKey(ctx, string(args[0]), mainSuffix)
 	if err != nil {
 		return err
 	}
@@ -240,7 +240,7 @@ func cmdExpandedMapHMSET(wf io.Writer, ctx *context, args [][]byte) error {
 		if err != nil {
 			return err
 		}
-		err = ctx.client.PutBins(createWritePolicyEx(ctx.expandedMapDefaultTTL, false), key, as.NewBin(MAIN_KEY_BIN_NAME, *suffixedKey), as.NewBin(SECOND_KEY_BIN_NAME, string(args[i])), as.NewBin(VALUE_BIN_NAME, encode(ctx, args[i+1])), as.NewBin("created_at", now()))
+		err = ctx.client.PutBins(createWritePolicyEx(ctx.expandedMapDefaultTTL, false), key, as.NewBin(mainKeyBinName, *suffixedKey), as.NewBin(secondKeyBinName, string(args[i])), as.NewBin(valueBinName, encode(ctx, args[i+1])), as.NewBin("created_at", now()))
 		if err != nil {
 			return err
 		}
@@ -260,14 +260,14 @@ func cmdExpandedMapHMGET(wf io.Writer, ctx *context, args [][]byte) error {
 			if err != nil {
 				return err
 			}
-			rec, err := ctx.client.Get(ctx.readPolicy, key, VALUE_BIN_NAME)
+			rec, err := ctx.client.Get(ctx.readPolicy, key, valueBinName)
 			if err != nil {
 				return err
 			}
 			res[i] = rec
 		}
 	}
-	return writeArrayBin(wf, res, VALUE_BIN_NAME, "")
+	return writeArrayBin(wf, res, valueBinName, "")
 }
 
 func cmdExpandedMapHGETALL(wf io.Writer, ctx *context, args [][]byte) error {
@@ -279,7 +279,7 @@ func cmdExpandedMapHGETALL(wf io.Writer, ctx *context, args [][]byte) error {
 		return writeArray(wf, make([]interface{}, 0))
 	}
 	statement := as.NewStatement(ctx.ns, ctx.set)
-	statement.Addfilter(as.NewEqualFilter(MAIN_KEY_BIN_NAME, *suffixedKey))
+	statement.Addfilter(as.NewEqualFilter(mainKeyBinName, *suffixedKey))
 	recordset, err := ctx.client.Query(nil, statement)
 	if err != nil {
 		return err
@@ -291,7 +291,7 @@ func cmdExpandedMapHGETALL(wf io.Writer, ctx *context, args [][]byte) error {
 		}
 		out = append(out, res.Record)
 	}
-	return writeArrayBin(wf, out, VALUE_BIN_NAME, SECOND_KEY_BIN_NAME)
+	return writeArrayBin(wf, out, valueBinName, secondKeyBinName)
 }
 
 func compositeIncr(wf io.Writer, ctx *context, suffixedKey *string, field string, value int) error {
@@ -299,14 +299,14 @@ func compositeIncr(wf io.Writer, ctx *context, suffixedKey *string, field string
 	if err != nil {
 		return err
 	}
-	rec, err := ctx.client.Operate(createWritePolicyEx(ctx.expandedMapDefaultTTL, false), key, as.PutOp(as.NewBin(MAIN_KEY_BIN_NAME, *suffixedKey)), as.PutOp(as.NewBin(SECOND_KEY_BIN_NAME, field)), as.AddOp(as.NewBin(VALUE_BIN_NAME, value)), as.GetOpForBin(VALUE_BIN_NAME))
+	rec, err := ctx.client.Operate(createWritePolicyEx(ctx.expandedMapDefaultTTL, false), key, as.PutOp(as.NewBin(mainKeyBinName, *suffixedKey)), as.PutOp(as.NewBin(secondKeyBinName, field)), as.AddOp(as.NewBin(valueBinName, value)), as.GetOpForBin(valueBinName))
 	if err != nil {
 		if errResultCode(err) == ase.BIN_TYPE_ERROR {
 			return writeLine(wf, "$-1")
 		}
 		return err
 	}
-	return writeBinInt(wf, rec, VALUE_BIN_NAME)
+	return writeBinInt(wf, rec, valueBinName)
 }
 
 func cmdExpandedMapHINCRBYEX(wf io.Writer, ctx *context, args [][]byte) error {
@@ -357,7 +357,7 @@ func cmdExpandedMapHMINCRBYEX(wf io.Writer, ctx *context, args [][]byte) error {
 			if err != nil {
 				return err
 			}
-			_, err = ctx.client.Operate(createWritePolicyEx(ctx.expandedMapDefaultTTL, false), key, as.PutOp(as.NewBin(MAIN_KEY_BIN_NAME, *suffixedKey)), as.PutOp(as.NewBin(SECOND_KEY_BIN_NAME, string(a[i]))), as.AddOp(as.NewBin(VALUE_BIN_NAME, incr)))
+			_, err = ctx.client.Operate(createWritePolicyEx(ctx.expandedMapDefaultTTL, false), key, as.PutOp(as.NewBin(mainKeyBinName, *suffixedKey)), as.PutOp(as.NewBin(secondKeyBinName, string(a[i]))), as.AddOp(as.NewBin(valueBinName, incr)))
 			if err != nil {
 				return err
 			}
