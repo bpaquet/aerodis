@@ -589,6 +589,22 @@ func cmdTTL(wf io.Writer, ctx *context, args [][]byte) error {
 	return writeLine(wf, ":"+strconv.FormatUint(ttl, 10))
 }
 
+func cmdEXISTS(wf io.Writer, ctx *context, args [][]byte) error {
+	key, err := buildKey(ctx, args[0])
+	if err != nil {
+		return err
+	}
+
+	rec, err := ctx.client.GetHeader(ctx.readPolicy, key)
+	if err != nil {
+		return err
+	}
+	if rec == nil {
+		return writeLine(wf, ":0")
+	}
+	return writeLine(wf, ":1")
+}
+
 func cmdFLUSHDB(wf io.Writer, ctx *context, args [][]byte) error {
 	policy := as.NewScanPolicy()
 	recordset, err := ctx.client.ScanAll(policy, ctx.ns, ctx.set)

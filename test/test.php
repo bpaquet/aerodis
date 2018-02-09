@@ -82,6 +82,15 @@ compare($r->del('myKey2'), 1);
 compare($r->get('myKey'), false);
 compare($r->get('myKey2'), false);
 
+echo("Exists\n");
+
+$r->delete('myKey');
+compare($r->exists('myKey'), false);
+compare($r->set('myKey', 12), true);
+compare($r->exists('myKey'), true);
+$r->delete('myKey');
+compare($r->exists('myKey'), false);
+
 function generateRandomString($length = 10) {
   $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
   $charactersLength = strlen($characters);

@@ -30,6 +30,7 @@ const sizeArrayField = "__size__"
 
 func standardHandlers() map[string]handler {
 	handlers := make(map[string]handler)
+	handlers["EXISTS"] = handler{1, 1, cmdEXISTS, false}
 	handlers["DEL"] = handler{1, 1, cmdDEL, false}
 	handlers["GET"] = handler{1, 1, cmdGET, false}
 	handlers["SET"] = handler{2, 1, cmdSET, false}
